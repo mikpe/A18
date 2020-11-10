@@ -315,11 +315,17 @@ void flush()
 void do_label()
 {
     SCRATCH SYMBOL *l;
+    SCRATCH int len;
     SYMBOL *find_symbol(), *new_symbol();
 //    void error();
 
     if (label[0]) {
         listhex = TRUE;
+        // Strip off optional ':'
+        len = strlen(label);
+        if (label[len - 1] == ':') {
+            label[len - 1] = '\0';
+        }
         if (pass == 1) {
             if (!((l = new_symbol(label)) -> attr)) {
                 l -> attr = FORWD + VAL;
