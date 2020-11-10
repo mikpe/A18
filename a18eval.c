@@ -65,7 +65,7 @@ expression analyzer processes the token stream into unsigned results of
 arithmetic expressions.
 */
 
-/*  Get global goodies:  												*/
+/*  Get global goodies:                                                 */
 
 #include "a18.h"
 
@@ -74,7 +74,7 @@ int ishex(char c);
 int isnum(char c);
 int isalph(char c);
 
-/*  Get access to global mailboxes defined in A68.C:					*/
+/*  Get access to global mailboxes defined in A68.C:                    */
 
 extern char line[];
 extern int filesp, forwd, pass;
@@ -82,11 +82,11 @@ extern unsigned pc;
 extern FILE *filestk[], *source;
 extern TOKEN token;
 
-/*  Expression analysis routine.  The token stream from the lexical	    */
-/*  analyzer is processed as an arithmetic expression and reduced to an	*/
-/*  unsigned value.  If an error occurs during the evaluation, the	    */
-/*  global flag	forwd is set to indicate to the line assembler that it	*/
-/*  should not base certain decisions on the result of the evaluation.	*/
+/*  Expression analysis routine.  The token stream from the lexical     */
+/*  analyzer is processed as an arithmetic expression and reduced to an */
+/*  unsigned value.  If an error occurs during the evaluation, the      */
+/*  global flag forwd is set to indicate to the line assembler that it  */
+/*  should not base certain decisions on the result of the evaluation.  */
 
 static int bad;
 
@@ -115,12 +115,12 @@ unsigned pre;
                 unlex();
 
             case EOL:
-            	exp_error('E');
+                exp_error('E');
                 printf(" EXPRESSION ERROR 1\n");
                 return 0;
 
             case OPR:
-            	if (!(token.attr & UNARY)) {
+                if (!(token.attr & UNARY)) {
                     exp_error('E');
                     break;
                 }
@@ -129,25 +129,25 @@ unsigned pre;
                             (unsigned) UOP1 : token.attr & PREC));
                 switch (op) {
                     case '-':
-                    	u = word(-u);
+                        u = word(~u + 1);
                         break;
 
                     case NOT:
-                    	u ^= 0xffff;
+                        u ^= 0xffff;
                         break;
 
                     case HIGH:
-                    	u = high(u);
+                        u = high(u);
                         break;
 
                     case LOW:
-                    	u = low(u);
+                        u = low(u);
                         break;
                 }
 
-            case VAL:	
+            case VAL:
             case STR:
-            	for (;;) {
+                for (;;) {
                     op = lex() -> valu;
                     switch (token.attr & TYPE) {
                         case SEP:
@@ -241,11 +241,11 @@ char c;
     error(c);
 }
 
-/*  Lexical analyzer.  The source input character stream is chopped up	*/
-/*  into its component parts and the pieces are evaluated.  Symbols are	*/
-/*  looked up, operators are looked up, etc.  Everything gets reduced	*/
-/*  to an attribute word, a numeric value, and (possibly) a string	    */
-/*  value.								                                */
+/*  Lexical analyzer.  The source input character stream is chopped up  */
+/*  into its component parts and the pieces are evaluated.  Symbols are */
+/*  looked up, operators are looked up, etc.  Everything gets reduced   */
+/*  to an attribute word, a numeric value, and (possibly) a string      */
+/*  value.                                                              */
 
 static int oldt = FALSE;
 static int quote = FALSE;
@@ -275,7 +275,11 @@ TOKEN *lex()
         else {
             token.attr = VAL;
             token.valu = 0;
-            if (s = find_symbol(token.sval)) {
+            if (token.sval[0] == '$') {
+                memmove(token.sval, token.sval + 1, strlen(token.sval));
+                make_number(16);
+            }
+            else if (s = find_symbol(token.sval)) {
                 token.valu = s -> valu;
                 if (pass == 2 && s -> attr & FORWD)
                     forwd = TRUE;
@@ -288,15 +292,15 @@ TOKEN *lex()
         pops(token.sval);
         for (p = token.sval; *p; ++p);
         switch (toupper(*--p)) {
-            case 'B':	b = 2; break;
+            case 'B':   b = 2; break;
 
             case 'O':
-            case 'Q':	b = 8; break;
+            case 'Q':   b = 8; break;
 
-            default:	++p;
-            case 'D':	b = 10; break;
+            default:    ++p;
+            case 'D':   b = 10; break;
 
-            case 'H':	b = 16; break;
+            case 'H':   b = 16; break;
         }
         *p = '\0';
         make_number(b);
@@ -325,7 +329,7 @@ TOKEN *lex()
 
             case '/':
                 token.attr = BINARY + MULT + OPR;
-opr1:		    token.valu = c;
+opr1:           token.valu = c;
                 break;
 
             case '<':
@@ -356,7 +360,7 @@ opr1:		    token.valu = c;
                     token.valu = GE;
                 else
                     pushc(c);
-opr2:		    token.attr = BINARY + RELAT + OPR;
+opr2:           token.attr = BINARY + RELAT + OPR;
                 break;
 
             case '\'':
@@ -385,8 +389,6 @@ opr2:		    token.attr = BINARY + RELAT + OPR;
 
     return &token;
 }
-
-
 
 void make_number(base)
 unsigned base;
@@ -434,8 +436,8 @@ char c;
     return isalph(c) || isnum(c);
 }
 
-/*  Push back the current token into the input stream.  One level of	*/
-/*  pushback is supported.						                        */
+/*  Push back the current token into the input stream.  One level of    */
+/*  pushback is supported.                                              */
 
 void unlex()
 {
@@ -443,8 +445,8 @@ void unlex()
     return;
 }
 
-/*  Get an alphanumeric string into the string value part of the	    */
-/*  current token.  Leading blank space is trashed.			            */
+/*  Get an alphanumeric string into the string value part of the        */
+/*  current token.  Leading blank space is trashed.                     */
 
 void pops(s)
 char *s;
@@ -458,7 +460,7 @@ char *s;
     return;
 }
 
-/*  Trash blank space and push back the character following it.		    */
+/*  Trash blank space and push back the character following it.         */
 
 void trash()
 {
@@ -470,11 +472,11 @@ void trash()
     return;
 }
 
-/*  Get character from input stream.  This routine does a number of	    */
-/*  other things while it's passing back characters.  All control	    */
-/*  characters except \t and \n are ignored.  \t is mapped into ' '.	*/
-/*  Semicolon is mapped to \n.  In addition, a copy of all input is set	*/
-/*  up in a line buffer for the benefit of the listing.			        */
+/*  Get character from input stream.  This routine does a number of     */
+/*  other things while it's passing back characters.  All control       */
+/*  characters except \t and \n are ignored.  \t is mapped into ' '.    */
+/*  Semicolon is mapped to \n.  In addition, a copy of all input is set */
+/*  up in a line buffer for the benefit of the listing.                 */
 
 static int oldc, eol;
 static char *lptr;
@@ -510,8 +512,8 @@ int popc()
     }
 }
 
-/*  Push character back onto input stream.  Only one level of push-back	*/
-/*  supported.  \0 cannot be pushed back, but nobody would want to.	    */
+/*  Push character back onto input stream.  Only one level of push-back */
+/*  supported.  \0 cannot be pushed back, but nobody would want to.     */
 
 void pushc(c)
 char c;
@@ -520,8 +522,8 @@ char c;
     return;
 }
 
-/*  Begin new line of source input.  This routine returns non-zero if	*/
-/*  EOF	has been reached on the main source file, zero otherwise.	    */
+/*  Begin new line of source input.  This routine returns non-zero if   */
+/*  EOF has been reached on the main source file, zero otherwise.       */
 
 int newline()
 {

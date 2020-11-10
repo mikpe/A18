@@ -260,7 +260,7 @@ int popc();
 
 #define     MAXLINE     255
 
-/*  The maximum number of source files that can be open simultaneously:	*/
+/*  The maximum number of source files that can be open simultaneously: */
 
 #define     FILES       4
 
@@ -291,32 +291,32 @@ int popc();
 #define     IFDEPTH     16      /* maximum IF nesting level             */
 #define     PREBYTE     0x68    /* processor's opcode prebyte           */
 #define     PLO         0xa0    /* processor's PLO R0 opcode            */
-#define     PHI         0xb0    /* processor's PHI R0 opcode        	*/
-#define     NOP         0xc4    /* processor's NOP opcode           	*/
-#define     LDI         0xf8    /* processor's LDI opcode           	*/
-#define     ON          1       /* assembly turned on               	*/
-#define     OFF         -1      /* assembly turned off              	*/
+#define     PHI         0xb0    /* processor's PHI R0 opcode            */
+#define     NOP         0xc4    /* processor's NOP opcode               */
+#define     LDI         0xf8    /* processor's LDI opcode               */
+#define     ON          1       /* assembly turned on                   */
+#define     OFF         -1      /* assembly turned off                  */
 
-/*  Line assembler (A18.C) opcode attribute word flag masks:        	*/
+/*  Line assembler (A18.C) opcode attribute word flag masks:            */
 
-#define     PSEUDO      0x200	/* is pseudo-op                			*/
-#define     ISIF        0x100   /* is IF, ELSE, or ENDI        			*/
-#define     IS1805      0x080   /* is 1805A-only opcode        			*/
-#define     REGTYP      0x060   /* register argument type:     			*/
-#define     IOPORT      0x060   /*    i/o port                 			*/
-#define     NOT_R0      0x040   /*    any register but R0      			*/
-#define     ANY         0x020   /*    any register             			*/
-#define     NUMTYP      0x018   /* numerical argument type:    			*/
-#define     SIXTN       0x018   /*    16-bit word              			*/
-#define     BRANCH      0x010   /*    8-bit branch target      			*/
-#define     IMMED       0x008   /*    8-bit immediate    byte			*/
-#define     BYTES       0x007   /* number of instruction bytes 			*/
+#define     PSEUDO      0x200   /* is pseudo-op                         */
+#define     ISIF        0x100   /* is IF, ELSE, or ENDI                 */
+#define     IS1805      0x080   /* is 1805A-only opcode                 */
+#define     REGTYP      0x060   /* register argument type:              */
+#define     IOPORT      0x060   /*    i/o port                          */
+#define     NOT_R0      0x040   /*    any register but R0               */
+#define     ANY         0x020   /*    any register                      */
+#define     NUMTYP      0x018   /* numerical argument type:             */
+#define     SIXTN       0x018   /*    16-bit word                       */
+#define     BRANCH      0x010   /*    8-bit branch target               */
+#define     IMMED       0x008   /*    8-bit immediate    byte           */
+#define     BYTES       0x007   /* number of instruction bytes          */
 
-/*  Line assembler (A18.C) pseudo-op opcode token values:        		*/
+/*  Line assembler (A18.C) pseudo-op opcode token values:               */
 
 #define     BLK         1
 #define     BYTE        2
-#define     CALL        3     
+#define     CALL        3
 #define     CPU         4
 #define     DB          5
 #define     DW          6

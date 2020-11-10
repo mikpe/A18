@@ -66,11 +66,11 @@ assembly routine uses the expression analyzer and the lexical analyzer to
 parse the source line convert it into the object bytes that it represents.
 */
 
-/*  Get global goodies:  												*/
+/*  Get global goodies:                                                 */
 
 #include "a18.h"
 
-/*  Define global mailboxes for all modules:							*/
+/*  Define global mailboxes for all modules:                            */
 
 char errcode, line[MAXLINE + 1], title[MAXLINE];
 int pass = 0;
@@ -84,10 +84,10 @@ int byteline = 0;
 FILE *filestk[FILES], *source;
 TOKEN token;
 
-/*  Mainline routine.  This routine parses the command line, sets up	*/
-/*  the assembler at the beginning of each pass, feeds the source text	*/
-/*  to the line assembler, feeds the result to the listing and hex file	*/
-/*  drivers, and cleans everything up at the end of the run.			*/
+/*  Mainline routine.  This routine parses the command line, sets up    */
+/*  the assembler at the beginning of each pass, feeds the source text  */
+/*  to the line assembler, feeds the result to the listing and hex file */
+/*  drivers, and cleans everything up at the end of the run.            */
 
 int done, extend, ifsp, off;
 
@@ -112,37 +112,37 @@ char **argv;
             switch (toupper(*++*argv)) {
                 case 'L':
                     while (* ++*argv) {
-                           
+
                         switch(toupper(**argv)) {
                             case 'O':
                                 octal = 1;
-                                break;   
-                                   
+                                break;
+
                             case 'B':
                                 binary = 1;
                                 break;
-                           
+
                             case '1':
                                 byteline = 1;
                                 break;
-                           
+
                             default:
                                 warning(BADOPT);
                         }
                     }
-                           
+
                     if (!--argc) {
                         warning(NOLST);
                         break;
                     }
                     else
                         ++argv;
-                        
+
                     lopen(*argv);
                     break;
-                            
+
                 /*Specify output file (HEX)*/
-                
+
                 case 'O':
                     if (!*++*argv) {
                         if (!--argc) {
@@ -154,7 +154,7 @@ char **argv;
                     }
                     hopen(*argv);
                     break;
-                
+
                 /*Specify binary output file */
                 case 'B':
                     if (!*++*argv) {
@@ -167,7 +167,7 @@ char **argv;
                     }
                     ropen(*argv);
                     break;
-  
+
                 default:
                     warning(BADOPT);
             }
@@ -184,7 +184,9 @@ char **argv;
         fatal_error(NOASM);
 
     while (++pass < 3) {
-        fseek(source = filestk[0],0L,0);
+        source = filestk[0];
+        if (source != NULL)
+            fseek(source,0L,0);
         done = extend = off = FALSE;
         errors = filesp = ifsp = pagelen = pc = 0;  title[0] = '\0';
         while (!done) {
@@ -200,13 +202,14 @@ char **argv;
             pc = word(pc + bytes);
             if (pass == 2) {
                 lputs();
-                for (o = obj; bytes--;  hputc(*o++)) 
+                for (o = obj; bytes--;  hputc(*o++))
                     rputc(*o);
             }
         }
     }
 
-    fclose(filestk[0]);
+    if (filestk[0] != NULL)
+        fclose(filestk[0]);
     lclose();
     hclose();
     rclose();
@@ -219,10 +222,10 @@ char **argv;
     exit(errors);
 }
 
-/*  Line assembly routine.  This routine gets expressions and tokens	*/
-/*  from the source file using the expression evaluator and lexical		*/
-/*  analyzer, respectively.  It fills a buffer with the machine code	*/
-/*  bytes and returns nothing.											*/
+/*  Line assembly routine.  This routine gets expressions and tokens    */
+/*  from the source file using the expression evaluator and lexical     */
+/*  analyzer, respectively.  It fills a buffer with the machine code    */
+/*  bytes and returns nothing.                                          */
 
 char label[MAXLINE];
 int ifstack[IFDEPTH] = { ON };
@@ -326,7 +329,7 @@ void do_label()
         else {
             if (l = find_symbol(label)) {
                 l -> attr = VAL;
-                if (l -> valu != pc) 
+                if (l -> valu != pc)
                     error('M');
             }
             else
@@ -355,7 +358,7 @@ void normal_op()
     }
     *objp++ = opcod -> valu;
     objp[0] = objp[1] = 0;
-    
+
     while (attrib & (REGTYP + NUMTYP)) {
         operand = expr();
         switch (attrib & REGTYP) {
@@ -383,7 +386,7 @@ void normal_op()
             case 0:
                 switch (attrib & NUMTYP) {
                     case SIXTN:
-                    	*objp++ = high(operand);
+                        *objp++ = high(operand);
                         *objp = low(operand);
                         break;
 
@@ -396,7 +399,7 @@ void normal_op()
                         break;
 
                     case IMMED:
-                    	if (operand > 0xff &&
+                        if (operand > 0xff &&
                             operand < 0xff80) {
                             error('V');  return;
                         }
@@ -456,8 +459,6 @@ void pseudo_op()
             bytes = 3;
             obj[0] = 0xd4;
             u = expr();
-            if (forwd)
-                error('P');
             obj[1] = high(u);
             obj[2] = low(u);
             break;
@@ -555,8 +556,10 @@ void pseudo_op()
             break;
 
         case IF:
-            if (++ifsp == IFDEPTH)
+            if (++ifsp >= IFDEPTH) {
                 fatal_error(IFOFLOW);
+                break;
+            }
             address = expr();
             if (forwd) {
                 error('P');
@@ -592,10 +595,13 @@ void pseudo_op()
             listhex = FALSE;
             do_label();
             if ((lex() -> attr & TYPE) == STR) {
-                if (++filesp == FILES)
+                if (++filesp == FILES) {
                     fatal_error(FLOFLOW);
+                    break;
+                }
                 if (!(filestk[filesp] = fopen(token.sval,"r"))) {
-                    --filesp;  error('V');
+                    --filesp;
+                    error('V');
                 }
             }
             else

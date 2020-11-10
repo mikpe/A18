@@ -109,9 +109,10 @@ char *nam;
     for (p = &sroot; (q = *p) && (i = strcmp(nam,q -> sname)); )
         p = i < 0 ? &(q -> left) : &(q -> right);
     if (!q) {
-        if (!(*p = q = (SYMBOL *)calloc(1,sizeof(SYMBOL) + strlen(nam))))
+        if ((*p = q = (SYMBOL *)calloc(1,sizeof(SYMBOL) + strlen(nam))) != NULL)
+            strcpy(q->sname, nam);
+        else
             fatal_error(SYMBOLS);
-        strcpy(q -> sname,nam);
     }
     return q;
 }
@@ -125,8 +126,9 @@ char *nam;
     SCRATCH int i;
     SCRATCH SYMBOL *p;
 
-    for (p = sroot; p && (i = strcmp(nam,p -> sname));
-        p = i < 0 ? p -> left : p -> right);
+    for (p = sroot; p && (i = strcmp(nam, p->sname));
+         p = i < 0 ? p->left : p->right);
+
     return p;
 }
 
@@ -316,9 +318,7 @@ char *nam;
     return mybsearch(oprtbl,oprtbl + (sizeof(oprtbl) / sizeof(OPCODE)),nam);
 }
 
-
 int ustrcmp(char *s, char *t);
-
 
 OPCODE *mybsearch(lo,hi,nam)
 OPCODE *lo, *hi;
@@ -396,13 +396,13 @@ void lputs()
         i = bytes;
         o = obj;
         do {
-        
+
             fprintf(list,"%c  ",errcode);
             didline=0;
 
             if (listhex) {
                 for (j = 4; j; --j) {
-                
+
 
                     if (((j==4)&&i) || (byteline&&i))  {
                         if (j!=4)
@@ -420,13 +420,13 @@ void lputs()
                         bb=*o;
 
                         if (octal)
-                            fprintf(list," %03o",*o++); 
+                            fprintf(list," %03o",*o++);
                         else
-                            fprintf(list," %02x",*o++); 
+                            fprintf(list," %02x",*o++);
 
                         if (binary){
                             fprintf(list, ":");
-                            for (k=0;k<8;k++) { 
+                            for (k=0;k<8;k++) {
                                 if (bb&0x80)
                                   fprintf(list, "1");
                               else
@@ -444,7 +444,7 @@ void lputs()
                                 fprintf(list,"\n");
                         }
                     }
-                    else  if (!byteline) 
+                    else  if (!byteline)
                         fprintf(list,"   ");
                 }
             }
@@ -452,7 +452,7 @@ void lputs()
                 fprintf(list,"%18s","");
 
             if (!didline)
-                fprintf(list,"   %s",line);  
+                fprintf(list,"   %s",line);
 
             strcpy(line,"\n");
             check_page();
@@ -524,7 +524,7 @@ void check_page()
 
 static FILE *raw = NULL;
 static int rawstart=-1;
-/* Raw file output routines*/ 
+/* Raw file output routines*/
 void ropen(nam)
 char *nam;
 {
@@ -548,12 +548,12 @@ unsigned c;
 }
 
 void rseek(a)
-unsigned a;
+int a;
 {
     void fatal_error();
-    
+
     if (rawstart == -1) {
-        rawstart = a;        
+        rawstart = a;
         return;
     }
     if (a<rawstart) {
@@ -569,9 +569,9 @@ void rclose()
 {
     if (raw)
         fclose(raw);
-   
+
    raw = NULL;
-   
+
    return;
 }
 
@@ -670,7 +670,7 @@ unsigned typ;
     putb(typ);
     for (i = 0; i < cnt; ++i)
         putb(buf[i]);
-    putb(low(-sum));
+    putb(low(~sum + 1));
     putc('\n',hex);
 
     addr += cnt;
