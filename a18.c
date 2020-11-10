@@ -422,6 +422,7 @@ void pseudo_op()
     SCRATCH char *s;
     SCRATCH unsigned *o, u;
     SCRATCH SYMBOL *l;
+    SCRATCH int esc;
     unsigned expr();
     SYMBOL *find_symbol(), *new_symbol();
     TOKEN *lex();
@@ -430,6 +431,7 @@ void pseudo_op()
     o = obj;
     switch (opcod -> valu) {
         case BLK:
+        case DS:
             do_label();
             u = word(pc + expr());
             if (forwd)
@@ -672,8 +674,37 @@ void pseudo_op()
             do_label();
             while ((lex() -> attr & TYPE) != EOL) {
                 if ((token.attr & TYPE) == STR) {
-                    for (s = token.sval; *s; *o++ = *s++)
-                        ++bytes;
+                    s = token.sval;
+                    esc = FALSE;
+                    while (*s) {
+                        if (*s == '\\') {
+                            esc = TRUE;
+                        }
+                        else if (esc) {
+                            switch (*s) { 
+                                case 'a':  *o++ = 0x07; break;
+                                case 'b':  *o++ = 0x08; break;
+                                case 'e':  *o++ = 0x1b; break;
+                                case 'f':  *o++ = 0x0c; break;
+                                case 'n':  *o++ = 0x0a; break;
+                                case 'r':  *o++ = 0x0d; break;
+                                case 't':  *o++ = 0x09; break;
+                                case 'v':  *o++ = 0x0b; break;
+                                case '\\': *o++ = 0x5c; break;
+                                case '\'': *o++ = 0x27; break;
+                                case '"':  *o++ = 0x22; break;
+                                case '?':  *o++ = 0x3f; break;
+                                default:   *o++ = *s;   break;
+                            }
+                            bytes++;
+                            esc = FALSE;
+                        }
+                        else {
+                            *o++ = *s;
+                            bytes++;
+                        }
+                        s++;
+                    }
                     if ((lex() -> attr & TYPE) != SEP)
                         unlex();
                 }

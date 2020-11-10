@@ -319,22 +319,23 @@ int popc();
 #define     CALL        3
 #define     CPU         4
 #define     DB          5
-#define     DW          6
-#define     EJCT        7
-#define     ELSE        8
-#define     END         9
-#define     ENDI        10
-#define     EQU         11
-#define     IF          12
-#define     INCL        13
-#define     LOAD        14
-#define     ORG         15
-#define     PAGE        16
-#define     RETN        17
-#define     SET         18
-#define     TEXT        19
-#define     TITL        20
-#define     WORD        21
+#define     DS          6
+#define     DW          7
+#define     EJCT        8
+#define     ELSE        9
+#define     END         10
+#define     ENDI        11
+#define     EQU         12
+#define     IF          13
+#define     INCL        14
+#define     LOAD        15
+#define     ORG         16
+#define     PAGE        17
+#define     RETN        18
+#define     SET         19
+#define     TEXT        20
+#define     TITL        21
+#define     WORD        22
 
 /*  Lexical analyzer (A18EVAL.C) token buffer and stream pointer:       */
 

@@ -183,6 +183,7 @@ char *nam;
     { IS1805 + ANY + SIXTN + 4, 0x20,   "DBNZ"  },
     { ANY + 1,                  0x20,   "DEC"   },
     { 1,                        0x71,   "DIS"   },
+    { PSEUDO,                   DS,     "DS"    },
     { IS1805 + 2,               0x76,   "DSAV"  },
     { IS1805 + IMMED + 3,       0x7f,   "DSBI"  },
     { IS1805 + 2,               0xf7,   "DSM"   },
