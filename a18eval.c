@@ -279,6 +279,14 @@ TOKEN *lex()
                 memmove(token.sval, token.sval + 1, strlen(token.sval));
                 make_number(16);
             }
+            else if (token.sval[0] == '@') {
+                memmove(token.sval, token.sval + 1, strlen(token.sval));
+                make_number(8);
+            }
+            else if (token.sval[0] == '%') {
+              memmove(token.sval, token.sval + 1, strlen(token.sval));
+              make_number(2);
+            }
             else if (s = find_symbol(token.sval)) {
                 token.valu = s -> valu;
                 if (pass == 2 && s -> attr & FORWD)
