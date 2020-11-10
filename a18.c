@@ -315,7 +315,7 @@ void flush()
 void do_label()
 {
     SCRATCH SYMBOL *l;
-    SCRATCH int len;
+    SCRATCH size_t len;
     SYMBOL *find_symbol(), *new_symbol();
 //    void error();
 
