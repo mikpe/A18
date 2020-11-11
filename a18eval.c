@@ -256,6 +256,7 @@ TOKEN *lex()
     SCRATCH unsigned b;
     SCRATCH OPCODE *o;
     SCRATCH SYMBOL *s;
+    SCRATCH int esc;
     OPCODE *find_operator();
     SYMBOL *find_symbol();
     void exp_error(), make_number(), pops(), pushc(), trash();
@@ -375,7 +376,14 @@ opr2:           token.attr = BINARY + RELAT + OPR;
             case '"':
                 quote = TRUE;
                 token.attr = STR;
-                for (p = token.sval; (*p = popc()) != c; ++p)
+                esc = FALSE;
+                for (p = token.sval; ((*p = popc()) != c) || esc; ++p)
+                    if (*p == '\\' && !esc) {
+                        esc = TRUE;
+                    }
+                    else {
+                        esc = FALSE;
+                    }
                     if (*p == '\n') {
                         exp_error('"');
                         break;

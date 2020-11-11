@@ -419,14 +419,17 @@ void normal_op()
 
 void pseudo_op()
 {
-    SCRATCH char *s;
+    SCRATCH char *s, *n, *e;
+    SCRATCH char t;
     SCRATCH unsigned *o, u;
     SCRATCH SYMBOL *l;
     SCRATCH int esc;
+    SCRATCH int i;
     unsigned expr();
     SYMBOL *find_symbol(), *new_symbol();
     TOKEN *lex();
     void do_label(), fatal_error(), hseek(), rseek(), unlex();
+    int isoct(char c);
 
     o = obj;
     switch (opcod -> valu) {
@@ -681,7 +684,28 @@ void pseudo_op()
                             esc = TRUE;
                         }
                         else if (esc) {
-                            switch (*s) { 
+                            if (isoct(*s)) {
+                                // Octal escape sequence.
+                                // Remember the start.
+                                n = s;
+                                // Use up to 3 octal characters.
+                                i = 1;
+                                do {
+                                    ++s;
+                                    ++i;
+                                } while (*s && isoct(*s) && i <= 3);
+                                // Remember the current content and
+                                // terminate the digits.
+                                t = *s;
+                                *s = '\0';
+                                // Get the octal value.
+                                *o++ = strtoul(n, &e, 8);
+                                // Restore the following character.
+                                *s = t;
+                                s = e - 1;
+                            }
+                            else {
+                                switch (*s) {
                                 case 'a':  *o++ = 0x07; break;
                                 case 'b':  *o++ = 0x08; break;
                                 case 'e':  *o++ = 0x1b; break;
@@ -694,7 +718,12 @@ void pseudo_op()
                                 case '\'': *o++ = 0x27; break;
                                 case '"':  *o++ = 0x22; break;
                                 case '?':  *o++ = 0x3f; break;
+                                case 'x':
+                                    *o++ = strtoul(++s, &e, 16);
+                                    s = e - 1;
+                                    break;
                                 default:   *o++ = *s;   break;
+                                }
                             }
                             bytes++;
                             esc = FALSE;
@@ -742,3 +771,10 @@ void pseudo_op()
     }
     return;
 }
+
+int isoct(c)
+char c;
+{
+    return c >= '0' && c <= '7';
+}
+
