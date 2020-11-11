@@ -430,7 +430,7 @@ void pseudo_op()
     SCRATCH unsigned *o, u;
     SCRATCH SYMBOL *l;
     SCRATCH int esc;
-    SCRATCH int i;
+    SCRATCH unsigned i;
     unsigned expr();
     SYMBOL *find_symbol(), *new_symbol();
     TOKEN *lex();
@@ -570,6 +570,22 @@ void pseudo_op()
             }
             else
                 error('L');
+            break;
+
+        case FILL:
+            do_label();
+            u = expr();
+            if (u > 0xFF) {
+                fatal_error(RANGE);
+                break;
+            }
+            bytes = expr();
+            if (bytes > MAXLINE) {
+                fatal_error(RANGE);
+                break;
+            }
+            for (i = 0; i < bytes; i++)
+                *o++ = u;
             break;
 
         case IF:

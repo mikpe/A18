@@ -197,6 +197,7 @@ char *nam;
     { PSEUDO + ISIF,            ENDI,   "ENDI"  },
     { PSEUDO,                   EQU,    "EQU"   },
     { IS1805 + 2,               0x09,   "ETQ"   },
+    { PSEUDO,                   FILL,   "FILL"  },
     { IS1805 + 2,               0x08,   "GEC"   },
     { ANY + 1,                  0x90,   "GHI"   },
     { ANY + 1,                  0x80,   "GLO"   },
@@ -539,7 +540,7 @@ char *nam;
     if (raw)
         warning(TWOHEX);
     else if (!(raw = fopen(nam,"wb")))
-        fatal_error(HEXOPEN);
+        fatal_error(RAWOPEN);
     return;
 }
 
