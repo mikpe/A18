@@ -524,7 +524,11 @@ void check_page()
 }
 
 static FILE *raw = NULL;
-static int rawstart=-1;
+static unsigned rcnt = 0;
+static unsigned raddr = 0;
+static unsigned rgap = 0;
+static unsigned char rbuf[HEXSIZE];
+
 /* Raw file output routines*/
 void ropen(nam)
 char *nam;
@@ -542,38 +546,62 @@ char *nam;
 void rputc(c)
 unsigned c;
 {
-    if (raw)
-        fputc(c, raw);
+    if (raw) {
+        if (rgap) {
+            if (rcnt) {
+                fwrite(rbuf, 1, rcnt, raw);
+                rcnt = 0;
+            }
 
-    return;
+            memset(rbuf, 0xff, HEXSIZE);
+
+            while (rgap > 0) {
+                rcnt = (rgap > HEXSIZE) ? HEXSIZE : rgap;
+                fwrite(rbuf, 1, rcnt, raw);
+                rgap -= rcnt;
+            }
+
+            rcnt = 0;
+            rgap = 0;
+        }
+
+        rbuf[rcnt++] = c;
+        raddr++;
+
+        if (rcnt == HEXSIZE) {
+            fwrite(rbuf, 1, HEXSIZE, raw);
+            rcnt = 0;
+        }   
+    }
 }
 
 void rseek(a)
-int a;
+unsigned a;
 {
     void fatal_error();
 
-    if (rawstart == -1) {
-        rawstart = a;
-        return;
+    if (a < raddr) {
+        fatal_error("Binary can't go backward.");
     }
-    if (a<rawstart) {
-        fatal_error("Invalid SEEK");
-    }
-    if (raw)
-        fseek(raw, a - rawstart, SEEK_SET);
 
-    return;
+    if (raddr != 0) {
+        rgap = a - raddr;
+    }
+
+    raddr = a;
 }
 
 void rclose()
 {
-    if (raw)
-        fclose(raw);
+    void fatal_error();
 
-   raw = NULL;
+    if (raw) {
+        if (rcnt)
+            fwrite(rbuf, 1, rcnt, raw);
 
-   return;
+        if (fclose(raw) == EOF)
+            fatal_error(DSKFULL);
+    }
 }
 
 /*  Buffer storage for hex output file.  This allows this module to     */
