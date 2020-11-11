@@ -103,7 +103,7 @@ char **argv;
     void rclose(), ropen(), rputc();
     void fatal_error(), warning();
 
-    printf("1802/1805A Cross-Assembler (Portable) Ver 2.5\n");
+    printf("1802/1805A Cross-Assembler (Portable) Ver 2.6\n");
     printf("Copyright (c) 1985 William C. Colley, III\n");
     printf("Copyright (c) 2017 Mark W. Sherman\n\n");
 
