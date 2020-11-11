@@ -405,7 +405,7 @@ void lputs()
                 for (j = 4; j; --j) {
 
 
-                    if (((j==4)&&i) || (byteline&&i))  {
+                    if (((j==4)) || (byteline))  {
                         if (j!=4)
                             fprintf(list, "   ");
 
