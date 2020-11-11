@@ -235,6 +235,7 @@ OPCODE *opcod;
 void asm_line()
 {
     SCRATCH int i;
+    SCRATCH size_t len;
     int isalph(), popc();
     OPCODE *find_code(), *find_operator();
     void do_label(), flush(), normal_op(), pseudo_op();
@@ -251,6 +252,11 @@ void asm_line()
         if (isalph(i)) {
             pushc(i);
             pops(label);
+            // Strip off optional ':'
+            len = strlen(label);
+            if (label[len - 1] == ':') {
+                label[len - 1] = '\0';
+            }
             if (find_operator(label)) {
                 label[0] = '\0';
                 error('L');
