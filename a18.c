@@ -1473,8 +1473,7 @@ void pseudo_op()
     return;
 }
 
-int isoct(c)
-char c;
+int isoct(char c)
 {
     return c >= '0' && c <= '7';
 }
