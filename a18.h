@@ -292,10 +292,17 @@ int popc();
 #define     BIGINST     4       /* longest instruction length           */
 #define     IFDEPTH     16      /* maximum IF nesting level             */
 #define     PREBYTE     0x68    /* processor's opcode prebyte           */
+#define     GLO         0x80    /* processor's GLO R0 opcode            */
+#define     GHI         0x90    /* processor's GHI R0 opcode            */
+#define     IRX         0x60    /* processor's IRX instruction          */
+#define     LDX         0xf0    /* processor's LDX instruction          */
+#define     LDXA        0x72    /* processor's LDXA instruction         */
+#define     STXD        0x73    /* processor's STXD instruction         */
 #define     PLO         0xa0    /* processor's PLO R0 opcode            */
 #define     PHI         0xb0    /* processor's PHI R0 opcode            */
 #define     NOP         0xc4    /* processor's NOP opcode               */
 #define     LDI         0xf8    /* processor's LDI opcode               */
+#define     DEC         0x20    /* processor's DEC opcode               */
 #define     ON          1       /* assembly turned on                   */
 #define     OFF         -1      /* assembly turned off                  */
 
@@ -316,29 +323,58 @@ int popc();
 
 /*  Line assembler (A18.C) pseudo-op opcode token values:               */
 
-#define     BLK         1
-#define     BYTE        2
-#define     CALL        3
-#define     CPU         4
-#define     DB          5
-#define     DS          6
-#define     DW          7
-#define     EJCT        8
-#define     ELSE        9
-#define     END         10
-#define     ENDI        11
-#define     EQU         12
-#define     FILL        13
-#define     IF          14
-#define     INCL        15
-#define     LOAD        16
-#define     ORG         17
-#define     PAGE        18
-#define     RETN        19
-#define     SET         20
-#define     TEXT        21
-#define     TITL        22
-#define     WORD        23
+#define     OP_ADC      1
+#define     OP_ADCI     2
+#define     OP_ADD      3
+#define     OP_ADI      4
+#define     OP_AND      5
+#define     OP_ANI      6
+#define     OP_BLK      7
+#define     OP_BNZ      8
+#define     OP_BYTE     9
+#define     OP_BZ       10
+#define     OP_CALL     11
+#define     OP_CPU      12
+#define     OP_DB       13
+#define     OP_DBNZ     14
+#define     OP_DLBNZ    15
+#define     OP_DS       16
+#define     OP_DW       17
+#define     OP_EJCT     18
+#define     OP_ELSE     19
+#define     OP_END      20
+#define     OP_ENDI     21
+#define     OP_EQU      22
+#define     OP_FILL     23
+#define     OP_IF       24
+#define     OP_INCL     25
+#define     OP_LBNZ     26
+#define     OP_LBZ      27
+#define     OP_LOAD     28
+#define     OP_MOV      29
+#define     OP_MOVI     30
+#define     OP_OR       31
+#define     OP_ORI      32
+#define     OP_ORG      33
+#define     OP_PAGE     34
+#define     OP_POP      35
+#define     OP_PUSH     36
+#define     OP_RETN     37
+#define     OP_SET      38
+#define     OP_SBB      39
+#define     OP_SBBI     40
+#define     OP_SHL      41
+#define     OP_SHLC     42
+#define     OP_SHR      43
+#define     OP_SHRC     44
+#define     OP_SUB      45
+#define     OP_SUBI     46
+#define     OP_TEXT     47
+#define     OP_TITL     48
+#define     OP_WORD     49
+#define     OP_XOR      50
+#define     OP_XRI      51
+#define     OP_ZERO     52
 
 /*  Lexical analyzer (A18EVAL.C) token buffer and stream pointer:       */
 
@@ -423,4 +459,4 @@ typedef struct {
 
 #define    HEXSIZE        32
 
-void error(char code);
+extern void error(char code);
