@@ -260,6 +260,10 @@ int popc();
 
 #define     MAXLINE     255
 
+/*  The largest amount of code that can be generated for one line       */
+
+#define     MAXOBJ      1024
+
 /*  The maximum number of source files that can be open simultaneously: */
 
 #define     FILES       4
@@ -323,58 +327,62 @@ int popc();
 
 /*  Line assembler (A18.C) pseudo-op opcode token values:               */
 
-#define     OP_ADC      1
-#define     OP_ADCI     2
-#define     OP_ADD      3
-#define     OP_ADI      4
-#define     OP_AND      5
-#define     OP_ANI      6
-#define     OP_BLK      7
-#define     OP_BNZ      8
-#define     OP_BYTE     9
-#define     OP_BZ       10
-#define     OP_CALL     11
-#define     OP_CPU      12
-#define     OP_DB       13
-#define     OP_DBNZ     14
-#define     OP_DLBNZ    15
-#define     OP_DS       16
-#define     OP_DW       17
-#define     OP_EJCT     18
-#define     OP_ELSE     19
-#define     OP_END      20
-#define     OP_ENDI     21
-#define     OP_EQU      22
-#define     OP_FILL     23
-#define     OP_IF       24
-#define     OP_INCL     25
-#define     OP_LBNZ     26
-#define     OP_LBZ      27
-#define     OP_LOAD     28
-#define     OP_MOV      29
-#define     OP_MOVI     30
-#define     OP_OR       31
-#define     OP_ORI      32
-#define     OP_ORG      33
-#define     OP_PAGE     34
-#define     OP_POP      35
-#define     OP_PUSH     36
-#define     OP_RETN     37
-#define     OP_SET      38
-#define     OP_SBB      39
-#define     OP_SBBI     40
-#define     OP_SHL      41
-#define     OP_SHLC     42
-#define     OP_SHR      43
-#define     OP_SHRC     44
-#define     OP_SUB      45
-#define     OP_SUBI     46
-#define     OP_TEXT     47
-#define     OP_TITL     48
-#define     OP_WORD     49
-#define     OP_XOR      50
-#define     OP_XRI      51
-#define     OP_ZERO     52
+#define     OP_ALIGN    1
+#define     OP_BINCL    2
+#define     OP_BLK      3
+#define     OP_BRNZ     4
+#define     OP_BYTE     5
+#define     OP_BRZ      6
+#define     OP_CALL     7
+#define     OP_CPU      8
+#define     OP_DB       9
+#define     OP_DBNZ     10
+#define     OP_DLBNZ    11
+#define     OP_DS       12
+#define     OP_DW       13
+#define     OP_EJCT     14
+#define     OP_ELSE     15
+#define     OP_END      16
+#define     OP_ENDI     17
+#define     OP_EQU      18
+#define     OP_FILL     19
+#define     OP_IF       20
+#define     OP_INCL     21
+#define     OP_LBRNZ    22
+#define     OP_LBRZ     23
+#define     OP_LOAD     24
+#define     OP_RADC     25
+#define     OP_RADCI    26
+#define     OP_RADD     27
+#define     OP_RADI     28
+#define     OP_RAND     29
+#define     OP_RANI     30
+#define     OP_RETN     31
+#define     OP_RLD      32
+#define     OP_RLDI     33
+#define     OP_ROR      34
+#define     OP_RORI     35
+#define     OP_RSBB     36
+#define     OP_RSBBI    37
+#define     OP_RSHL     38
+#define     OP_RSHLC    39
+#define     OP_RSHR     40
+#define     OP_RSHRC    41
+#define     OP_RSUB     42
+#define     OP_RSUBI    43
+#define     OP_RXOR     44
+#define     OP_RXRI     45
+#define     OP_RCLR     46
+#define     OP_ORG      47
+#define     OP_PAGE     48
+#define     OP_POP      49
+#define     OP_PUSH     50
+#define     OP_SET      51
+#define     OP_SHARED   52
+#define     OP_TEXT     53
+#define     OP_TEXTZ    54
+#define     OP_TITL     55
+#define     OP_WORD     56
 
 /*  Lexical analyzer (A18EVAL.C) token buffer and stream pointer:       */
 
@@ -439,6 +447,7 @@ typedef struct {
 struct _symbol {
     unsigned attr;
     unsigned valu;
+    int shared;
     struct _symbol *left, *right;
     char sname[1];
 };

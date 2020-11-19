@@ -75,7 +75,8 @@ parse the source line convert it into the object bytes that it represents.
 char errcode, line[MAXLINE + 1], title[MAXLINE];
 int pass = 0;
 int eject, filesp, forwd, listhex;
-unsigned address, bytes, errors, listleft, obj[MAXLINE], pagelen, pc;
+unsigned address, bytes, errors, listleft, obj[MAXOBJ], pagelen, pc;
+unsigned char bin[MAXOBJ];
 
 int binary = 0;
 int octal = 0;
@@ -339,7 +340,7 @@ void do_label()
             }
         }
         else {
-            if (l = find_symbol(label)) {
+            if (l = find_symbol(label, TRUE)) {
                 l -> attr = VAL;
                 if (l -> valu != pc)
                     error('M');
@@ -431,6 +432,7 @@ void pseudo_op()
     SCRATCH SYMBOL *l;
     SCRATCH int esc;
     SCRATCH unsigned i;
+    SCRATCH FILE* f;
     unsigned expr();
     SYMBOL *find_symbol(), *new_symbol();
     TOKEN *lex();
@@ -439,6 +441,45 @@ void pseudo_op()
 
     o = obj;
     switch (opcod -> valu) {
+        case OP_ALIGN:
+            u = expr();
+            address = pc = (pc + (u-1)) & ~(u-1);
+            if (pass == 2) {
+                hseek(pc);
+                rseek(pc);
+            }
+            do_label();
+            break;
+
+        case OP_BINCL:
+            do_label();
+            if ((lex()->attr & TYPE) == STR) {
+                if (!(f = fopen(token.sval, "rb"))) {
+                    error('V');
+                }
+                else {
+                    fseek(f, 0, SEEK_END);
+                    u = ftell(f);
+                    if (u > MAXOBJ) {
+                        error('V');
+                    }
+                    else {
+                        if (pass == 2) {
+                            fseek(f, 0, SEEK_SET);
+                            fread(bin, 1, u, f);
+                            for (i = 0; i < u; i++) {
+                                *o++ = bin[i];
+                            }
+                        }
+                        bytes = u;
+                    }
+                    fclose(f);
+                }
+            }
+            else
+                error('S');
+            break;
+
         case OP_BLK:
         case OP_DS:
             do_label();
@@ -556,7 +597,7 @@ void pseudo_op()
                     }
                 }
                 else {
-                    if (l = find_symbol(label)) {
+                    if (l = find_symbol(label, FALSE)) {
                         l -> attr = VAL;
                         address = expr();
                         if (forwd)
@@ -580,7 +621,7 @@ void pseudo_op()
                 break;
             }
             bytes = expr();
-            if (bytes > MAXLINE) {
+            if (bytes > MAXOBJ) {
                 fatal_error(RANGE);
                 break;
             }
@@ -610,7 +651,6 @@ void pseudo_op()
             break;
 
         case OP_LOAD:
-        case OP_MOVI:
             do_label();
             bytes = 6;
             obj[0] = obj[3] = LDI;
@@ -677,7 +717,7 @@ void pseudo_op()
                     }
                 }
                 else {
-                    if (l = find_symbol(label)) {
+                    if (l = find_symbol(label, FALSE)) {
                         address = expr();
                         if (forwd)
                             error('P');
@@ -697,6 +737,7 @@ void pseudo_op()
             break;
 
         case OP_TEXT:
+        case OP_TEXTZ:
             do_label();
             while ((lex() -> attr & TYPE) != EOL) {
                 if ((token.attr & TYPE) == STR) {
@@ -759,6 +800,10 @@ void pseudo_op()
                     }
                     if ((lex() -> attr & TYPE) != SEP)
                         unlex();
+                    if (opcod->valu == OP_TEXTZ) {
+                        *o++ = '\0';
+                        bytes++;
+                    }
                 }
                 else
                     error('S');
@@ -792,232 +837,166 @@ void pseudo_op()
             } while ((token.attr & TYPE) == SEP);
             break;
 
-        case OP_ADC:
+        case OP_RADC:
             do_label();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o = 0x74;
-                bytes = 1;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if ((u = expr()) > 15) {
-                    u = 0;
-                    error('R');
-                }
-                if ((v = expr()) > 15) {
-                    v = 0;
-                    error('R');
-                }
-                bytes = 12;
-                obj[0] = GLO + v;
-                obj[1] = STXD;
-                obj[2] = IRX;
-                obj[3] = GLO + u;
-                obj[4] = 0x74;
-                obj[5] = PLO + u;
-                obj[6] = GHI + v;
-                obj[7] = STXD;
-                obj[8] = IRX;
-                obj[9] = GHI + u;
-                obj[10] = 0x74;
-                obj[11] = PHI + u;
+            if ((v = expr()) > 15) {
+                v = 0;
+                error('R');
             }
+            bytes = 12;
+            obj[0] = GLO + v;
+            obj[1] = STXD;
+            obj[2] = IRX;
+            obj[3] = GLO + u;
+            obj[4] = 0x74;
+            obj[5] = PLO + u;
+            obj[6] = GHI + v;
+            obj[7] = STXD;
+            obj[8] = IRX;
+            obj[9] = GHI + u;
+            obj[10] = 0x74;
+            obj[11] = PHI + u;
             break;
 
-        case OP_ADCI:
+        case OP_RADCI:
             do_label();
-            u = expr();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o++ = 0x7c;
-                *o++ = low(u);
-                bytes = 2;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if (u > 15) {
-                    u = 0;
-                    error('R');
-                }
-                v = expr();
-                bytes = 8;
-                obj[0] = GLO + u;
-                obj[1] = 0x7c;
-                obj[2] = low(v);
-                obj[3] = PLO + u;
-                obj[4] = GHI + u;
-                obj[5] = 0x7c;
-                obj[6] = high(v);
-                obj[7] = PHI + u;
-            }
+            v = expr();
+            bytes = 8;
+            obj[0] = GLO + u;
+            obj[1] = 0x7c;
+            obj[2] = low(v);
+            obj[3] = PLO + u;
+            obj[4] = GHI + u;
+            obj[5] = 0x7c;
+            obj[6] = high(v);
+            obj[7] = PHI + u;
             break;
 
-        case OP_ADD:
+        case OP_RADD:
             do_label();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o = 0xf4;
-                bytes = 1;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if ((u = expr()) > 15) {
-                    u = 0;
-                    error('R');
-                }
-                if ((v = expr()) > 15) {
-                    v = 0;
-                    error('R');
-                }
-                bytes = 12;
-                obj[0] = GLO + v;
-                obj[1] = STXD;
-                obj[2] = IRX;
-                obj[3] = GLO + u;
-                obj[4] = 0xf4;
-                obj[5] = PLO + u;
-                obj[6] = GHI + v;
-                obj[7] = STXD;
-                obj[8] = IRX;
-                obj[9] = GHI + u;
-                obj[10] = 0x74;
-                obj[11] = PHI + u;
+            if ((v = expr()) > 15) {
+                v = 0;
+                error('R');
             }
+            bytes = 12;
+            obj[0] = GLO + v;
+            obj[1] = STXD;
+            obj[2] = IRX;
+            obj[3] = GLO + u;
+            obj[4] = 0xf4;
+            obj[5] = PLO + u;
+            obj[6] = GHI + v;
+            obj[7] = STXD;
+            obj[8] = IRX;
+            obj[9] = GHI + u;
+            obj[10] = 0x74;
+            obj[11] = PHI + u;
             break;
 
-        case OP_ADI:
+        case OP_RADI:
             do_label();
-            u = expr();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o++ = 0x7c;
-                *o++ = low(u);
-                bytes = 2;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if (u > 15) {
-                    u = 0;
-                    error('R');
-                }
-                v = expr();
-                bytes = 8;
-                obj[0] = GLO + u;
-                obj[1] = 0xfc;
-                obj[2] = low(v);
-                obj[3] = PLO + u;
-                obj[4] = GHI + u;
-                obj[5] = 0x7c;
-                obj[6] = high(v);
-                obj[7] = PHI + u;
-            }
+            v = expr();
+            bytes = 8;
+            obj[0] = GLO + u;
+            obj[1] = 0xfc;
+            obj[2] = low(v);
+            obj[3] = PLO + u;
+            obj[4] = GHI + u;
+            obj[5] = 0x7c;
+            obj[6] = high(v);
+            obj[7] = PHI + u;
             break;
 
-        case OP_AND:
+        case OP_RAND:
             do_label();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o = 0xf2;
-                bytes = 1;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if ((u = expr()) > 15) {
-                    u = 0;
-                    error('R');
-                }
-                if ((v = expr()) > 15) {
-                    v = 0;
-                    error('R');
-                }
-                bytes = 12;
-                obj[0] = GLO + v;
-                obj[1] = STXD;
-                obj[2] = IRX;
-                obj[3] = GLO + u;
-                obj[4] = 0xf2;
-                obj[5] = PLO + u;
-                obj[6] = GHI + v;
-                obj[7] = STXD;
-                obj[8] = IRX;
-                obj[9] = GHI + u;
-                obj[10] = 0xf2;
-                obj[11] = PHI + u;
+            if ((v = expr()) > 15) {
+                v = 0;
+                error('R');
             }
+            bytes = 12;
+            obj[0] = GLO + v;
+            obj[1] = STXD;
+            obj[2] = IRX;
+            obj[3] = GLO + u;
+            obj[4] = 0xf2;
+            obj[5] = PLO + u;
+            obj[6] = GHI + v;
+            obj[7] = STXD;
+            obj[8] = IRX;
+            obj[9] = GHI + u;
+            obj[10] = 0xf2;
+            obj[11] = PHI + u;
             break;
 
-        case OP_ANI:
+        case OP_RANI:
             do_label();
-            u = expr();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o++ = 0xfa;
-                *o++ = low(u);
-                bytes = 2;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if (u > 15) {
-                    u = 0;
-                    error('R');
-                }
-                v = expr();
-                bytes = 8;
-                obj[0] = GLO + u;
-                obj[1] = 0xfa;
-                obj[2] = low(v);
-                obj[3] = PLO + u;
-                obj[4] = GHI + u;
-                obj[5] = 0xfa;
-                obj[6] = high(v);
-                obj[7] = PHI + u;
-            }
+            v = expr();
+            bytes = 8;
+            obj[0] = GLO + u;
+            obj[1] = 0xfa;
+            obj[2] = low(v);
+            obj[3] = PLO + u;
+            obj[4] = GHI + u;
+            obj[5] = 0xfa;
+            obj[6] = high(v);
+            obj[7] = PHI + u;
             break;
 
-        case OP_BNZ:
+        case OP_BRNZ:
             do_label();
-            u = expr();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o++ = 0x3a;
-                *o++ = low(u);
-                bytes = 2;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if (u > 15) {
-                    u = 0;
-                    error('R');
-                }
-                v = expr();
-                bytes = 6;
-                obj[0] = GLO + u;
-                obj[1] = 0x3a;
-                obj[2] = low(v);
-                obj[3] = GHI + u;
-                obj[4] = 0x3a;
-                obj[5] = low(v);
-            }
+            v = expr();
+            bytes = 6;
+            obj[0] = GLO + u;
+            obj[1] = 0x3a;
+            obj[2] = low(v);
+            obj[3] = GHI + u;
+            obj[4] = 0x3a;
+            obj[5] = low(v);
             break;
 
-        case OP_BZ:
+        case OP_BRZ:
             do_label();
-            u = expr();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o++ = 0x32;
-                *o++ = low(u);
-                bytes = 2;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if (u > 15) {
-                    u = 0;
-                    error('R');
-                }
-                v = expr();
-                bytes = 7;
-                obj[0] = GLO + u;
-                obj[1] = STXD;
-                obj[2] = IRX;
-                obj[3] = GHI + u;
-                obj[4] = 0xf1;
-                obj[5] = 0x32;
-                obj[6] = low(v);
-            }
+            v = expr();
+            bytes = 7;
+            obj[0] = GLO + u;
+            obj[1] = STXD;
+            obj[2] = IRX;
+            obj[3] = GHI + u;
+            obj[4] = 0xf1;
+            obj[5] = 0x32;
+            obj[6] = low(v);
             break;
 
         case OP_DBNZ:
@@ -1065,63 +1044,43 @@ void pseudo_op()
             obj[8] = low(v);
             break;
 
-        case OP_LBNZ:
+        case OP_LBRNZ:
             do_label();
-            u = expr();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o++ = 0xca;
-                *o++ = high(u);
-                *o++ = low(u);
-                bytes = 3;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if (u > 15) {
-                    u = 0;
-                    error('R');
-                }
-                v = expr();
-                bytes = 8;
-                obj[0] = GLO + u;
-                obj[1] = 0xca;
-                obj[2] = high(v);
-                obj[3] = low(v);
-                obj[4] = GHI + u;
-                obj[5] = 0xca;
-                obj[6] = high(v);
-                obj[7] = low(v);
-            }
+            v = expr();
+            bytes = 8;
+            obj[0] = GLO + u;
+            obj[1] = 0xca;
+            obj[2] = high(v);
+            obj[3] = low(v);
+            obj[4] = GHI + u;
+            obj[5] = 0xca;
+            obj[6] = high(v);
+            obj[7] = low(v);
             break;
 
-        case OP_LBZ:
+        case OP_LBRZ:
             do_label();
-            u = expr();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o++ = 0xc2;
-                *o++ = high(u);
-                *o++ = low(u);
-                bytes = 3;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if (u > 15) {
-                    u = 0;
-                    error('R');
-                }
-                v = expr();
-                bytes = 8;
-                obj[0] = GLO + u;
-                obj[1] = STXD;
-                obj[2] = IRX;
-                obj[3] = GHI + u;
-                obj[4] = 0xf1;
-                obj[5] = 0xc2;
-                obj[6] = high(v);
-                obj[7] = low(v);
-            }
+            v = expr();
+            bytes = 8;
+            obj[0] = GLO + u;
+            obj[1] = STXD;
+            obj[2] = IRX;
+            obj[3] = GHI + u;
+            obj[4] = 0xf1;
+            obj[5] = 0xc2;
+            obj[6] = high(v);
+            obj[7] = low(v);
             break;
 
-        case OP_MOV:
+        case OP_RLD:
             do_label();
             if ((u = expr()) > 15) {
                 u = 0;
@@ -1138,63 +1097,72 @@ void pseudo_op()
             obj[3] = PHI + u;
             break;
 
-        case OP_OR:
+        case OP_RLDI:
             do_label();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o = 0xf1;
-                bytes = 1;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
+            }
+            v = expr();
+            if (extend) {
+                *o++ = PREBYTE;
+                *o++ = 0xc0 + u;
+                *o++ = high(v);
+                *o++ = low(v);
+                bytes = 4;
             }
             else {
-                unlex();
-                if ((u = expr()) > 15) {
-                    u = 0;
-                    error('R');
-                }
-                if ((v = expr()) > 15) {
-                    v = 0;
-                    error('R');
-                }
-                bytes = 12;
-                obj[0] = GLO + v;
-                obj[1] = STXD;
-                obj[2] = IRX;
-                obj[3] = GLO + u;
-                obj[4] = 0xf1;
+                bytes = 6;
+                obj[0] = obj[3] = LDI;
+                obj[1] = high(v);
+                obj[2] = PHI + u;
+                obj[3] = LDI;
+                obj[4] = low(v);
                 obj[5] = PLO + u;
-                obj[6] = GHI + v;
-                obj[7] = STXD;
-                obj[8] = IRX;
-                obj[9] = GHI + u;
-                obj[10] = 0xf1;
-                obj[11] = PHI + u;
             }
             break;
 
-        case OP_ORI:
+        case OP_ROR:
             do_label();
-            u = expr();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o++ = 0xf9;
-                *o++ = low(u);
-                bytes = 2;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if (u > 15) {
-                    u = 0;
-                    error('R');
-                }
-                v = expr();
-                bytes = 8;
-                obj[0] = GLO + u;
-                obj[1] = 0xf9;
-                obj[2] = low(v);
-                obj[3] = PLO + u;
-                obj[4] = GHI + u;
-                obj[5] = 0xf9;
-                obj[6] = high(v);
-                obj[7] = PHI + u;
+            if ((v = expr()) > 15) {
+                v = 0;
+                error('R');
             }
+            bytes = 12;
+            obj[0] = GLO + v;
+            obj[1] = STXD;
+            obj[2] = IRX;
+            obj[3] = GLO + u;
+            obj[4] = 0xf1;
+            obj[5] = PLO + u;
+            obj[6] = GHI + v;
+            obj[7] = STXD;
+            obj[8] = IRX;
+            obj[9] = GHI + u;
+            obj[10] = 0xf1;
+            obj[11] = PHI + u;
+            break;
+
+        case OP_RORI:
+            do_label();
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
+            }
+            v = expr();
+            bytes = 8;
+            obj[0] = GLO + u;
+            obj[1] = 0xf9;
+            obj[2] = low(v);
+            obj[3] = PLO + u;
+            obj[4] = GHI + u;
+            obj[5] = 0xf9;
+            obj[6] = high(v);
+            obj[7] = PHI + u;
             break;
 
         case OP_POP:
@@ -1224,7 +1192,7 @@ void pseudo_op()
             obj[3] = STXD;
             break;
 
-        case OP_SBB:
+        case OP_RSBB:
             do_label();
             if ((u = expr()) > 15) {
                 u = 0;
@@ -1249,7 +1217,7 @@ void pseudo_op()
             obj[11] = PHI + u;
             break;
 
-        case OP_SBBI:
+        case OP_RSBBI:
             do_label();
             if ((u = expr()) > 15) {
                 u = 0;
@@ -1267,10 +1235,10 @@ void pseudo_op()
             obj[7] = PHI + u;
             break;
 
-        case OP_SHL:
+        case OP_RSHL:
             do_label();
             if ((lex()->attr & TYPE) == EOL) {
-                *o = 0xfe;
+                *o = 0x7e;
                 bytes = 1;
             }
             else {
@@ -1289,32 +1257,25 @@ void pseudo_op()
             }
             break;
 
-        case OP_SHLC:
+        case OP_RSHLC:
             do_label();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o = 0x7e;
-                bytes = 1;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if ((u = expr()) > 15) {
-                    u = 0;
-                    error('R');
-                }
-                bytes = 6;
-                obj[0] = GLO + u;
-                obj[1] = 0x7e;
-                obj[2] = PLO + u;
-                obj[3] = GHI + u;
-                obj[4] = 0x7e;
-                obj[5] = PHI + u;
-            }
+            bytes = 6;
+            obj[0] = GLO + u;
+            obj[1] = 0x7e;
+            obj[2] = PLO + u;
+            obj[3] = GHI + u;
+            obj[4] = 0x7e;
+            obj[5] = PHI + u;
             break;
 
-        case OP_SHR:
+        case OP_RSHR:
             do_label();
             if ((lex()->attr & TYPE) == EOL) {
-                *o = 0xf6;
+                *o = 0x76;
                 bytes = 1;
             }
             else {
@@ -1333,29 +1294,22 @@ void pseudo_op()
             }
             break;
 
-        case OP_SHRC:
+        case OP_RSHRC:
             do_label();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o = 0x76;
-                bytes = 1;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if ((u = expr()) > 15) {
-                    u = 0;
-                    error('R');
-                }
-                bytes = 6;
-                obj[0] = GLO + u;
-                obj[1] = 0x76;
-                obj[2] = PLO + u;
-                obj[3] = GHI + u;
-                obj[4] = 0x76;
-                obj[5] = PHI + u;
-            }
+            bytes = 6;
+            obj[0] = GHI + u;
+            obj[1] = 0x76;
+            obj[2] = PHI + u;
+            obj[3] = GLO + u;
+            obj[4] = 0x76;
+            obj[5] = PLO + u;
             break;
 
-        case OP_SUB:
+        case OP_RSUB:
             do_label();
             if ((u = expr()) > 15) {
                 u = 0;
@@ -1380,7 +1334,7 @@ void pseudo_op()
             obj[11] = PHI + u;
             break;
 
-        case OP_SUBI:
+        case OP_RSUBI:
             do_label();
             if ((u = expr()) > 15) {
                 u = 0;
@@ -1398,66 +1352,49 @@ void pseudo_op()
             obj[7] = PHI + u;
             break;
 
-        case OP_XOR:
-            do_label();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o = 0xf3;
-                bytes = 1;
+        case OP_RXOR:
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if ((u = expr()) > 15) {
-                    u = 0;
-                    error('R');
-                }
-                if ((v = expr()) > 15) {
-                    v = 0;
-                    error('R');
-                }
-                bytes = 12;
-                obj[0] = GLO + v;
-                obj[1] = STXD;
-                obj[2] = IRX;
-                obj[3] = GLO + u;
-                obj[4] = 0xf3;
-                obj[5] = PLO + u;
-                obj[6] = GHI + v;
-                obj[7] = STXD;
-                obj[8] = IRX;
-                obj[9] = GHI + u;
-                obj[10] = 0xf3;
-                obj[11] = PHI + u;
+            if ((v = expr()) > 15) {
+                v = 0;
+                error('R');
             }
+            bytes = 12;
+            obj[0] = GLO + v;
+            obj[1] = STXD;
+            obj[2] = IRX;
+            obj[3] = GLO + u;
+            obj[4] = 0xf3;
+            obj[5] = PLO + u;
+            obj[6] = GHI + v;
+            obj[7] = STXD;
+            obj[8] = IRX;
+            obj[9] = GHI + u;
+            obj[10] = 0xf3;
+            obj[11] = PHI + u;
             break;
 
-        case OP_XRI:
+        case OP_RXRI:
             do_label();
-            u = expr();
-            if ((lex()->attr & TYPE) == EOL) {
-                *o++ = 0xfb;
-                *o++ = low(u);
-                bytes = 2;
+            if ((u = expr()) > 15) {
+                u = 0;
+                error('R');
             }
-            else {
-                unlex();
-                if (u > 15) {
-                    u = 0;
-                    error('R');
-                }
-                v = expr();
-                bytes = 8;
-                obj[0] = GLO + u;
-                obj[1] = 0xfb;
-                obj[2] = low(v);
-                obj[3] = PLO + u;
-                obj[4] = GHI + u;
-                obj[5] = 0xfb;
-                obj[6] = high(v);
-                obj[7] = PHI + u;
-            }
+            v = expr();
+            bytes = 8;
+            obj[0] = GLO + u;
+            obj[1] = 0xfb;
+            obj[2] = low(v);
+            obj[3] = PLO + u;
+            obj[4] = GHI + u;
+            obj[5] = 0xfb;
+            obj[6] = high(v);
+            obj[7] = PHI + u;
             break;
 
-        case OP_ZERO:
+        case OP_RCLR:
             do_label();
             bytes = 4;
             obj[0] = LDI;

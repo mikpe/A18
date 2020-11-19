@@ -288,7 +288,7 @@ TOKEN *lex()
               memmove(token.sval, token.sval + 1, strlen(token.sval));
               make_number(2);
             }
-            else if (s = find_symbol(token.sval)) {
+            else if (s = find_symbol(token.sval, FALSE)) {
                 token.valu = s -> valu;
                 if (pass == 2 && s -> attr & FORWD)
                     forwd = TRUE;
@@ -314,7 +314,7 @@ TOKEN *lex()
         *p = '\0';
         make_number(b);
     }
-    else
+    else {
         switch (c) {
             case '(':
                 token.attr = UNARY + LPREN + OPR;
@@ -338,7 +338,7 @@ TOKEN *lex()
 
             case '/':
                 token.attr = BINARY + MULT + OPR;
-opr1:           token.valu = c;
+            opr1:           token.valu = c;
                 break;
 
             case '<':
@@ -369,7 +369,7 @@ opr1:           token.valu = c;
                     token.valu = GE;
                 else
                     pushc(c);
-opr2:           token.attr = BINARY + RELAT + OPR;
+            opr2:           token.attr = BINARY + RELAT + OPR;
                 break;
 
             case '\'':
@@ -384,10 +384,10 @@ opr2:           token.attr = BINARY + RELAT + OPR;
                     else {
                         esc = FALSE;
                     }
-                    if (*p == '\n') {
-                        exp_error('"');
-                        break;
-                    }
+                if (*p == '\n') {
+                    exp_error('"');
+                    break;
+                }
                 *p = '\0';
                 quote = FALSE;
                 if ((token.valu = token.sval[0]) && token.sval[1])
@@ -402,7 +402,7 @@ opr2:           token.attr = BINARY + RELAT + OPR;
                 token.attr = EOL;
                 break;
         }
-
+    }
     return &token;
 }
 

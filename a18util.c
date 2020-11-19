@@ -94,6 +94,8 @@ extern unsigned address, bytes, errors, listleft, obj[], pagelen;
 /*  here:                                                               */
 
 SYMBOL *sroot = NULL;
+SYMBOL* global = NULL;
+char composite[64];
 
 /*  Add new symbol to symbol table.  Returns pointer to symbol even if  */
 /*  the symbol already exists.  If there's not enough memory to store   */
@@ -103,31 +105,63 @@ SYMBOL *new_symbol(nam)
 char *nam;
 {
     SCRATCH int i;
+    SCRATCH char* n;
     SCRATCH SYMBOL **p, *q;
     void fatal_error();
 
-    for (p = &sroot; (q = *p) && (i = strcmp(nam,q -> sname)); )
+    if ((*nam == '.') && (global != NULL)) {
+        n = composite;
+        strcpy(n, global->sname);
+        strcat(n, nam);
+    }
+    else {
+        n = nam;
+    }
+
+    for (p = &sroot; (q = *p) && (i = strcmp(n,q -> sname)); )
         p = i < 0 ? &(q -> left) : &(q -> right);
     if (!q) {
-        if ((*p = q = (SYMBOL *)calloc(1,sizeof(SYMBOL) + strlen(nam))) != NULL)
-            strcpy(q->sname, nam);
+        if ((*p = q = (SYMBOL*)calloc(1, sizeof(SYMBOL) + strlen(n))) != NULL) {
+            strcpy(q->sname, n);
+            q->shared = FALSE;
+        }
         else
             fatal_error(SYMBOLS);
     }
+
+    if (*nam != '.') {
+        global = q;
+    }
+
     return q;
 }
 
 /*  Look up symbol in symbol table.  Returns pointer to symbol or NULL  */
 /*  if symbol not found.                                                */
 
-SYMBOL *find_symbol(nam)
-char *nam;
+SYMBOL* find_symbol(nam, label)
+char* nam;
+int label;
 {
     SCRATCH int i;
+    SCRATCH char* n;
     SCRATCH SYMBOL *p;
 
-    for (p = sroot; p && (i = strcmp(nam, p->sname));
+    if ((*nam == '.') && (global != NULL)) {
+        n = composite;
+        strcpy(n, global->sname);
+        strcat(n, nam);
+    }
+    else {
+        n = nam;
+    }
+
+    for (p = sroot; p && (i = strcmp(n, p->sname));
          p = i < 0 ? p->left : p->right);
+
+    if (label && (*nam != '.')) {
+        global = p;
+    }
 
     return p;
 }
@@ -142,12 +176,13 @@ char *nam;
     OPCODE *mybsearch();
 
     static OPCODE opctbl[] = {
-    { PSEUDO,                   OP_ADC,     "ADC"   },
-    { PSEUDO,                   OP_ADCI,    "ADCI"  },
-    { PSEUDO,                   OP_ADD,     "ADD"   },
-    { PSEUDO,                   OP_ADI,     "ADI"   },
-    { PSEUDO,                   OP_AND,     "AND"   },
-    { PSEUDO,                   OP_ANI,     "ANI"   },
+    { 1,                        0x74,       "ADC"   },
+    { IMMED + 2,                0x7c,       "ADCI"  },
+    { 1,                        0xf4,       "ADD"   },
+    { IMMED + 2,                0xfc,       "ADI"   },
+    { PSEUDO,                   OP_ALIGN,   "ALIGN" },
+    { 1,                        0xf2,       "AND"   },
+    { IMMED + 2,                0xfa,       "ANI"   },
     { BRANCH + 2,               0x34,       "B1"    },
     { BRANCH + 2,               0x35,       "B2"    },
     { BRANCH + 2,               0x36,       "B3"    },
@@ -155,6 +190,7 @@ char *nam;
     { IS1805 + BRANCH + 3,      0x3e,       "BCI"   },
     { BRANCH + 2,               0x33,       "BDF"   },
     { BRANCH + 2,               0x33,       "BGE"   },
+    { PSEUDO,                   OP_BINCL,   "BINCL" },
     { BRANCH + 2,               0x3b,       "BL"    },
     { PSEUDO,                   OP_BLK,     "BLK"   },
     { BRANCH + 2,               0x3b,       "BM"    },
@@ -164,13 +200,15 @@ char *nam;
     { BRANCH + 2,               0x3f,       "BN4"   },
     { BRANCH + 2,               0x3b,       "BNF"   },
     { BRANCH + 2,               0x39,       "BNQ"   },
-    { PSEUDO,                   OP_BNZ,     "BNZ"   },
+    { BRANCH + 2,               0x3a,       "BNZ"   },
     { BRANCH + 2,               0x33,       "BPZ"   },
     { BRANCH + 2,               0x31,       "BQ"    },
     { BRANCH + 2,               0x30,       "BR"    },
+    { PSEUDO,                   OP_BRNZ,    "BRNZ"  },
+    { PSEUDO,                   OP_BRZ,     "BRZ"    },
     { IS1805 + BRANCH + 3,      0x3f,       "BXI"   },
     { PSEUDO,                   OP_BYTE,    "BYTE"  },
-    { PSEUDO,                   OP_BZ,      "BZ"    },
+    { BRANCH + 2,               0x32,       "BZ"    },
     { PSEUDO,                   OP_CALL,    "CALL"  },
     { IS1805 + 2,               0x0d,       "CID"   },
     { IS1805 + 2,               0x0c,       "CIE"   },
@@ -211,10 +249,12 @@ char *nam;
     { SIXTN + 3,                0xc3,       "LBDF"  },
     { SIXTN + 3,                0xcb,       "LBNF"  },
     { SIXTN + 3,                0xc9,       "LBNQ"  },
-    { PSEUDO,                   OP_LBNZ,    "LBNZ"  },
+    { SIXTN + 3,                0xca,       "LBNZ"  },
     { SIXTN + 3,                0xc1,       "LBQ"   },
     { SIXTN + 3,                0xc0,       "LBR"   },
-    { PSEUDO,                   OP_LBZ,     "LBZ"   },
+    { PSEUDO,                   OP_LBRNZ,   "LBRNZ" },
+    { PSEUDO,                   OP_LBRZ,    "LBRZ"  },
+    { SIXTN + 3,                0xc2,       "LBZ"   },
     { ANY + 1,                  0x40,       "LDA"   },
     { IS1805 + 2,               0x06,       "LDC"   },
     { IMMED + 2,                0xf8,       "LDI"   },
@@ -231,32 +271,48 @@ char *nam;
     { 1,                        0xcd,       "LSQ"   },
     { 1,                        0xce,       "LSZ"   },
     { 1,                        0x79,       "MARK"  },
-    { PSEUDO,                   OP_MOV,     "MOV"   },
-    { PSEUDO,                   OP_MOVI,    "MOVI"  },
     { BRANCH + 2,               0x38,       "NBR"   },
     { SIXTN + 3,                0xc8,       "NLBR"  },
     { 1,                        0xc4,       "NOP"   },
-    { PSEUDO,                   OP_OR,      "OR"    },
+    { 1,                        0xf1,       "OR"    },
     { PSEUDO,                   OP_ORG,     "ORG"   },
-    { PSEUDO,                   OP_ORI,     "ORI"   },
+    { IMMED + 2,                0xf9,       "ORI"   },
     { IOPORT + 1,               0x60,       "OUT"   },
     { PSEUDO,                   OP_PAGE,    "PAGE"  },
     { ANY + 1,                  0xb0,       "PHI"   },
     { ANY + 1,                  0xa0,       "PLO"   },
     { PSEUDO,                   OP_POP,     "POP"   },
     { PSEUDO,                   OP_PUSH,    "PUSH"  },
+    { PSEUDO,                   OP_RADC,    "RADC"  },
+    { PSEUDO,                   OP_RADCI,   "RADCI" },
+    { PSEUDO,                   OP_RADD,    "RADD"  },
+    { PSEUDO,                   OP_RADI,    "RADI"  },
+    { PSEUDO,                   OP_RAND,    "RAND"  },
+    { PSEUDO,                   OP_RANI,    "RANI"  },
+    { PSEUDO,                   OP_RCLR,    "RCLR"  },
     { 1,                        0x7a,       "REQ"   },
     { 1,                        0x70,       "RET"   },
     { PSEUDO,                   OP_RETN,    "RETN"  },
-    { IS1805 + ANY + SIXTN + 4, 0xc0,       "RLDI"  },
+    { PSEUDO,                   OP_RLD,     "RLD"   },
+    { PSEUDO,                   OP_RLDI,    "RLDI"  },
     { IS1805 + ANY + 2,         0x60,       "RLXA"  },
     { IS1805 + ANY + 2,         0xb0,       "RNX"   },
-    { 1,                        0x7e,       "RSHL"  },
-    { 1,                        0x76,       "RSHR"  },
+    { PSEUDO,                   OP_ROR,     "ROR"   },
+    { PSEUDO,                   OP_RORI,    "RORI"  },
+    { PSEUDO,                   OP_RSHLC,   "RRSHL" },
+    { PSEUDO,                   OP_RSHRC,   "RRSHR" },
+    { PSEUDO,                   OP_RSBB,    "RSBB"  },
+    { PSEUDO,                   OP_RSBBI,   "RSBBI" },
+    { PSEUDO,                   OP_RSHL,    "RSHL"  },
+    { PSEUDO,                   OP_RSHLC,   "RSHLC" },
+    { PSEUDO,                   OP_RSHR,    "RSHR"  },
+    { PSEUDO,                   OP_RSHRC,   "RSHRC" },
+    { PSEUDO,                   OP_RSUB,    "RSUB"  },
+    { PSEUDO,                   OP_RSUBI,   "RSUBI" },
     { IS1805 + ANY + 2,         0xa0,       "RSXD"  },
+    { PSEUDO,                   OP_RXOR,    "RXOR"  },
+    { PSEUDO,                   OP_RXRI,    "RXRI"  },
     { 1,                        0x78,       "SAV"   },
-    { PSEUDO,                   OP_SBB,     "SBB"   },
-    { PSEUDO,                   OP_SBBI,    "SBBI"  },
     { IS1805 + ANY + SIXTN + 4, 0x80,       "SCAL"  },
     { IS1805 + 2,               0x05,       "SCM1"  },
     { IS1805 + 2,               0x03,       "SCM2"  },
@@ -268,10 +324,10 @@ char *nam;
     { 1,                        0x7b,       "SEQ"   },
     { PSEUDO,                   OP_SET,     "SET"   },
     { ANY + 1,                  0xe0,       "SEX"   },
-    { PSEUDO,                   OP_SHL,     "SHL"   },
-    { PSEUDO,                   OP_SHLC,    "SHLC"  },
-    { PSEUDO,                   OP_SHR,     "SHR"   },
-    { PSEUDO,                   OP_SHRC,    "SHRC"  },
+    { 1,                        0xfe,       "SHL"   },
+    { 1,                        0x7e,       "SHLC"  },
+    { 1,                        0xf6,       "SHR"   },
+    { 1,                        0x76,       "SHRC"  },
     { 1,                        0x38,       "SKP"   },
     { 1,                        0xf7,       "SM"    },
     { 1,                        0x77,       "SMB"   },
@@ -284,16 +340,14 @@ char *nam;
     { IS1805 + 2,               0x00,       "STPC"  },
     { ANY + 1,                  0x50,       "STR"   },
     { 1,                        0x73,       "STXD"  },
-    { PSEUDO,                   OP_SUB,     "SUB"   },
-    { PSEUDO,                   OP_SUBI,    "SUBI"  },
     { PSEUDO,                   OP_TEXT,    "TEXT"  },
+    { PSEUDO,                   OP_TEXTZ,   "TEXTZ" },
     { PSEUDO,                   OP_TITL,    "TITL"  },
     { PSEUDO,                   OP_WORD,    "WORD"  },
     { IS1805 + 2,               0x0b,       "XID"   },
     { IS1805 + 2,               0x0a,       "XIE"   },
-    { PSEUDO,                   OP_XOR,     "XOR"   },
-    { PSEUDO,                   OP_XRI,     "XRI"   },
-    { PSEUDO,                   OP_ZERO,    "ZERO"  }
+    { 1,                        0xf3,       "XOR"   },
+    { IMMED + 2,                0xfb,       "XRI"   }
     };
 
     return mybsearch(opctbl,opctbl + (sizeof(opctbl) / sizeof(OPCODE)),nam);
@@ -330,7 +384,14 @@ char *nam;
     return mybsearch(oprtbl,oprtbl + (sizeof(oprtbl) / sizeof(OPCODE)),nam);
 }
 
-int ustrcmp(char *s, char *t);
+int ustrcmp(s, t)
+char* s, * t;
+{
+    SCRATCH int i;
+
+    while (!(i = toupper(*s++) - toupper(*t)) && *t++);
+    return i;
+}
 
 OPCODE *mybsearch(lo,hi,nam)
 OPCODE *lo, *hi;
@@ -350,15 +411,6 @@ char *nam;
         else
             hi = chk;
     };
-}
-
-int ustrcmp(s,t)
-char *s, *t;
-{
-    SCRATCH int i;
-
-    while (!(i = toupper(*s++) - toupper(*t)) && *t++);
-    return i;
 }
 
 /*  Buffer storage for line listing routine.  This allows the listing   */
