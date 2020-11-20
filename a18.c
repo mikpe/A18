@@ -102,6 +102,7 @@ char **argv;
     void lclose(), lopen(), lputs();
     void hclose(), hopen(), hputc();
     void rclose(), ropen(), rputc();
+    void sclose(), sopen();
     void fatal_error(), warning();
 
     printf("1802/1805A Cross-Assembler (Portable) Ver 2.7\n");
@@ -169,6 +170,19 @@ char **argv;
                     ropen(*argv);
                     break;
 
+                /*Specify shared symbol output file */
+                case 'S':
+                    if (!*++ * argv) {
+                        if (!--argc) {
+                            warning(BADOPT);
+                            break;
+                        }
+                        else
+                            ++argv;
+                    }
+                    sopen(*argv);
+                    break;
+
                 default:
                     warning(BADOPT);
             }
@@ -214,6 +228,7 @@ char **argv;
     lclose();
     hclose();
     rclose();
+    sclose();
 
     if (errors)
         printf("%d Error(s)\n",errors);
@@ -734,6 +749,22 @@ void pseudo_op()
             }
             else
                 error('L');
+            break;
+
+        case OP_SHARED:
+            if (pass == 2) {
+                while ((lex()->attr & TYPE) != EOL) {
+                    if ((token.attr & TYPE) == VAL) {
+                        if (l = find_symbol(token.sval, FALSE)) {
+                            l->shared = TRUE;
+                        }
+                        else
+                            error('U');
+                    }
+                    else if ((token.attr & TYPE) != SEP)
+                        error('V');
+                }
+            }
             break;
 
         case OP_TEXT:
