@@ -105,7 +105,7 @@ char **argv;
     void sclose(), sopen();
     void fatal_error(), warning();
 
-    printf("1802/1805A Cross-Assembler (Portable) Ver 2.7\n");
+    printf("1802/1805A Cross-Assembler (Portable) Ver 2.8\n");
     printf("Copyright (c) 1985 William C. Colley, III\n");
     printf("Copyright (c) 2017 Mark W. Sherman\n\n");
 
@@ -439,20 +439,86 @@ void normal_op()
     }
 }
 
+unsigned *do_string(s, o)
+char* s;
+unsigned *o;
+{
+    SCRATCH int esc;
+    SCRATCH char t;
+    SCRATCH char *n, *e;
+    SCRATCH unsigned i;
+    int isoct(char c);
+
+    esc = FALSE;
+    while (*s) {
+        if (*s == '\\' && !esc) {
+            esc = TRUE;
+        }
+        else if (esc) {
+            if (isoct(*s)) {
+                // Octal escape sequence.
+                // Remember the start.
+                n = s;
+                // Use up to 3 octal characters.
+                i = 1;
+                do {
+                    ++s;
+                    ++i;
+                } while (*s && isoct(*s) && i <= 3);
+                // Remember the current content and
+                // terminate the digits.
+                t = *s;
+                *s = '\0';
+                // Get the octal value.
+                *o++ = strtoul(n, &e, 8);
+                // Restore the following character.
+                *s = t;
+                s = e - 1;
+            }
+            else {
+                switch (*s) {
+                case 'a':  *o++ = 0x07; break;
+                case 'b':  *o++ = 0x08; break;
+                case 'e':  *o++ = 0x1b; break;
+                case 'f':  *o++ = 0x0c; break;
+                case 'n':  *o++ = 0x0a; break;
+                case 'r':  *o++ = 0x0d; break;
+                case 't':  *o++ = 0x09; break;
+                case 'v':  *o++ = 0x0b; break;
+                case '\\': *o++ = 0x5c; break;
+                case '\'': *o++ = 0x27; break;
+                case '"':  *o++ = 0x22; break;
+                case '?':  *o++ = 0x3f; break;
+                case 'x':
+                    *o++ = strtoul(++s, &e, 16);
+                    s = e - 1;
+                    break;
+                default:   *o++ = *s;   break;
+                }
+            }
+            bytes++;
+            esc = FALSE;
+        }
+        else {
+            *o++ = *s;
+            bytes++;
+        }
+        s++;
+    }
+
+    return o;
+}
+
 void pseudo_op()
 {
-    SCRATCH char *s, *n, *e;
-    SCRATCH char t;
     SCRATCH unsigned *o, u, v;
     SCRATCH SYMBOL *l;
-    SCRATCH int esc;
     SCRATCH unsigned i;
     SCRATCH FILE* f;
     unsigned expr();
     SYMBOL *find_symbol(), *new_symbol();
     TOKEN *lex();
     void do_label(), fatal_error(), hseek(), rseek(), unlex();
-    int isoct(char c);
 
     o = obj;
     switch (opcod -> valu) {
@@ -514,16 +580,22 @@ void pseudo_op()
         case OP_DB:
             do_label();
             do {
-                if ((lex() -> attr & TYPE) == SEP)
-                    u = 0;
-                else {
-                    unlex();
-                    if ((u = expr()) > 0xff && u < 0xff80) {
-                        u = 0;  error('V');
-                    }
+                if ((lex()->attr & TYPE) == STR) {
+                    o = do_string(token.sval, o);
+                    lex();
                 }
-                *o++ = low(u);
-                ++bytes;
+                else {
+                    if ((token.attr & TYPE) == SEP)
+                        u = 0;
+                    else {
+                        unlex();
+                        if ((u = expr()) > 0xff && u < 0xff80) {
+                            u = 0;  error('V');
+                        }
+                    }
+                    *o++ = low(u);
+                    ++bytes;
+                }
             } while ((token.attr & TYPE) == SEP);
             break;
 
@@ -584,9 +656,7 @@ void pseudo_op()
             else {
                 done = eject = TRUE;
                 if (pass == 2 && (lex() -> attr & TYPE) != EOL) {
-                    unlex();
-                    hseek(address = expr());
-                    rseek(address);
+                    error('T');
                 }
                 if (ifsp)
                     error('I');
@@ -772,63 +842,7 @@ void pseudo_op()
             do_label();
             while ((lex() -> attr & TYPE) != EOL) {
                 if ((token.attr & TYPE) == STR) {
-                    s = token.sval;
-                    esc = FALSE;
-                    while (*s) {
-                        if (*s == '\\' && !esc) {
-                            esc = TRUE;
-                        }
-                        else if (esc) {
-                            if (isoct(*s)) {
-                                // Octal escape sequence.
-                                // Remember the start.
-                                n = s;
-                                // Use up to 3 octal characters.
-                                i = 1;
-                                do {
-                                    ++s;
-                                    ++i;
-                                } while (*s && isoct(*s) && i <= 3);
-                                // Remember the current content and
-                                // terminate the digits.
-                                t = *s;
-                                *s = '\0';
-                                // Get the octal value.
-                                *o++ = strtoul(n, &e, 8);
-                                // Restore the following character.
-                                *s = t;
-                                s = e - 1;
-                            }
-                            else {
-                                switch (*s) {
-                                case 'a':  *o++ = 0x07; break;
-                                case 'b':  *o++ = 0x08; break;
-                                case 'e':  *o++ = 0x1b; break;
-                                case 'f':  *o++ = 0x0c; break;
-                                case 'n':  *o++ = 0x0a; break;
-                                case 'r':  *o++ = 0x0d; break;
-                                case 't':  *o++ = 0x09; break;
-                                case 'v':  *o++ = 0x0b; break;
-                                case '\\': *o++ = 0x5c; break;
-                                case '\'': *o++ = 0x27; break;
-                                case '"':  *o++ = 0x22; break;
-                                case '?':  *o++ = 0x3f; break;
-                                case 'x':
-                                    *o++ = strtoul(++s, &e, 16);
-                                    s = e - 1;
-                                    break;
-                                default:   *o++ = *s;   break;
-                                }
-                            }
-                            bytes++;
-                            esc = FALSE;
-                        }
-                        else {
-                            *o++ = *s;
-                            bytes++;
-                        }
-                        s++;
-                    }
+                    o = do_string(token.sval, o);
                     if ((lex() -> attr & TYPE) != SEP)
                         unlex();
                     if (opcod->valu == OP_TEXTZ) {
