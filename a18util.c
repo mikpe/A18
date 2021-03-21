@@ -815,8 +815,14 @@ unsigned typ;
 
     putc(':',hex);
     putb(cnt);
-    putb(high(addr));
-    putb(low(addr));
+    if (typ == 1) {
+        putb(0);
+        putb(0);
+    }
+    else {
+        putb(high(addr));
+        putb(low(addr));
+    }
     putb(typ);
     for (i = 0; i < cnt; ++i)
         putb(buf[i]);
