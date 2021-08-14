@@ -470,6 +470,11 @@ typedef struct {
 
 /*  Utility package (A18UTIL.C) hex file output routines:               */
 
+typedef struct {
+    char* name;
+    unsigned valu;
+} PREDEFINED;
+
 #define    HEXSIZE        32
 
 extern void error(char code);

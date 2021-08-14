@@ -92,11 +92,51 @@ TOKEN token;
 
 int done, extend, ifsp, off;
 
+PREDEFINED predef[] = {
+    { "R0", 0 },
+    { "R1", 1 },
+    { "R2", 2 },
+    { "R3", 3 },
+    { "R4", 4 },
+    { "R5", 5 },
+    { "R6", 6 },
+    { "R7", 7 },
+    { "R8", 8 },
+    { "R9", 9 },
+    { "RA", 0xa },
+    { "RB", 0xb },
+    { "RC", 0xc },
+    { "RD", 0xd },
+    { "RE", 0xe },
+    { "RF", 0xf },
+    { "r0", 0 },
+    { "r1", 1 },
+    { "r2", 2 },
+    { "r3", 3 },
+    { "r4", 4 },
+    { "r5", 5 },
+    { "r6", 6 },
+    { "r7", 7 },
+    { "r8", 8 },
+    { "r9", 9 },
+    { "rA", 0xa },
+    { "rB", 0xb },
+    { "rC", 0xc },
+    { "rD", 0xd },
+    { "rE", 0xe },
+    { "rF", 0xf }
+};
+
+int npredef = sizeof(predef) / sizeof(PREDEFINED);
+
 void main(argc,argv)
 int argc;
 char **argv;
 {
     SCRATCH unsigned *o;
+    SCRATCH int i;
+    SCRATCH SYMBOL* l;
+    SYMBOL* new_symbol();
     int newline();
     void asm_line();
     void lclose(), lopen(), lputs();
@@ -198,6 +238,12 @@ char **argv;
     if (!filestk[0])
         fatal_error(NOASM);
 
+    for (i = 0; i < npredef; i++) {
+        l = new_symbol(predef[i].name);
+        l->attr = FORWD + VAL;
+        l->valu = predef[i].valu;
+    }
+    
     while (++pass < 3) {
         source = filestk[0];
         if (source != NULL)
