@@ -271,6 +271,7 @@ char *nam;
     { 1,                        0xcd,       "LSQ"    },
     { 1,                        0xce,       "LSZ"    },
     { 1,                        0x79,       "MARK"   },
+    { PSEUDO,                   OP_MOV,     "MOV"    },
     { BRANCH + 2,               0x38,       "NBR"    },
     { SIXTN + 3,                0xc8,       "NLBR"   },
     { 1,                        0xc4,       "NOP"    },

@@ -736,6 +736,7 @@ void pseudo_op()
             break;
 
         case OP_LOAD:
+        case OP_MOV:
             do_label();
             bytes = 6;
             obj[0] = obj[3] = LDI;
