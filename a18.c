@@ -119,12 +119,12 @@ PREDEFINED predef[] = {
     { "r7", 7 },
     { "r8", 8 },
     { "r9", 9 },
-    { "rA", 0xa },
-    { "rB", 0xb },
-    { "rC", 0xc },
-    { "rD", 0xd },
-    { "rE", 0xe },
-    { "rF", 0xf }
+    { "ra", 0xa },
+    { "rb", 0xb },
+    { "rc", 0xc },
+    { "rd", 0xd },
+    { "re", 0xe },
+    { "rf", 0xf }
 };
 
 int npredef = sizeof(predef) / sizeof(PREDEFINED);
