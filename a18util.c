@@ -453,8 +453,6 @@ void lputs()
     SCRATCH int i, j, k;
     SCRATCH unsigned *o;
     void check_page(), fatal_error();
-    char bin[9];
-    bin[8]='\0';
     unsigned char bb=0;
     int didline;
 
@@ -560,7 +558,8 @@ SYMBOL *sp;
     if (sp) {
         list_sym(sp -> left);
         fprintf(list,"%04x  %-10s",sp -> valu,sp -> sname);
-        if (col = ++col % SYMCOLS)
+        col = (col + 1) % SYMCOLS;
+        if (col != 0)
             fprintf(list,"    ");
         else {
             fprintf(list,"\n");

@@ -129,9 +129,7 @@ PREDEFINED predef[] = {
 
 int npredef = sizeof(predef) / sizeof(PREDEFINED);
 
-void main(argc,argv)
-int argc;
-char **argv;
+int main(int argc, char **argv)
 {
     SCRATCH unsigned *o;
     SCRATCH int i;
@@ -401,7 +399,8 @@ void do_label()
             }
         }
         else {
-            if (l = find_symbol(label, TRUE)) {
+            l = find_symbol(label, TRUE);
+            if (l != NULL) {
                 l -> attr = VAL;
                 if (l -> valu != pc)
                     error('M');
@@ -728,7 +727,8 @@ void pseudo_op()
                     }
                 }
                 else {
-                    if (l = find_symbol(label, FALSE)) {
+                    l = find_symbol(label, FALSE);
+                    if (l != NULL) {
                         l -> attr = VAL;
                         address = expr();
                         if (forwd)
@@ -849,7 +849,8 @@ void pseudo_op()
                     }
                 }
                 else {
-                    if (l = find_symbol(label, FALSE)) {
+                    l = find_symbol(label, FALSE);
+                    if (l != NULL) {
                         address = expr();
                         if (forwd)
                             error('P');
@@ -872,7 +873,8 @@ void pseudo_op()
             if (pass == 2) {
                 while ((lex()->attr & TYPE) != EOL) {
                     if ((token.attr & TYPE) == VAL) {
-                        if (l = find_symbol(token.sval, FALSE)) {
+                        l = find_symbol(token.sval, FALSE);
+                        if (l != NULL) {
                             l->shared = TRUE;
                         }
                         else

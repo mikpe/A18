@@ -269,7 +269,8 @@ TOKEN *lex()
     if (isalph(c = popc())) {
         pushc(c);
         pops(token.sval);
-        if (o = find_operator(token.sval)) {
+        o = find_operator(token.sval);
+        if (o != NULL) {
             token.attr = o -> attr;
             token.valu = o -> valu;
         }
@@ -288,7 +289,7 @@ TOKEN *lex()
               memmove(token.sval, token.sval + 1, strlen(token.sval));
               make_number(2);
             }
-            else if (s = find_symbol(token.sval, FALSE)) {
+            else if ((s = find_symbol(token.sval, FALSE)) != NULL) {
                 token.valu = s -> valu;
                 if (pass == 2 && s -> attr & FORWD)
                     forwd = TRUE;
