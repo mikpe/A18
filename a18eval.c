@@ -69,10 +69,15 @@ arithmetic expressions.
 
 #include "a18.h"
 
-int myisalnum(char c);
+/*  Local prototypes:                                                   */
+
+void exp_error(char c);
+unsigned eval(unsigned pre);
 int ishex(char c);
 int isnum(char c);
-int isalph(char c);
+void make_number(unsigned base);
+int myisalnum(char c);
+void unlex(void);
 
 /*  Get access to global mailboxes defined in A68.C:                    */
 
@@ -90,22 +95,18 @@ extern TOKEN token;
 
 static int bad;
 
-unsigned expr()
+unsigned expr(void)
 {
     SCRATCH unsigned u;
-    unsigned eval();
 
     bad = FALSE;
     u = eval(START);
     return bad ? 0 : u;
 }
 
-unsigned eval(pre)
-unsigned pre;
+unsigned eval(unsigned pre)
 {
     register unsigned op, u, v;
-    TOKEN *lex();
-    void exp_error(), unlex();
 
     for (;;) {
         u = op = lex() -> valu;
@@ -234,8 +235,7 @@ unsigned pre;
     }
 }
 
-void exp_error(c)
-char c;
+void exp_error(char c)
 {
     forwd = bad = TRUE;
     error(c);
@@ -250,16 +250,13 @@ char c;
 static int oldt = FALSE;
 static int quote = FALSE;
 
-TOKEN *lex()
+TOKEN *lex(void)
 {
     SCRATCH char c, *p;
     SCRATCH unsigned b;
     SCRATCH OPCODE *o;
     SCRATCH SYMBOL *s;
     SCRATCH int esc;
-    OPCODE *find_operator();
-    SYMBOL *find_symbol();
-    void exp_error(), make_number(), pops(), pushc(), trash();
 
     if (oldt) {
         oldt = FALSE;
@@ -407,12 +404,10 @@ TOKEN *lex()
     return &token;
 }
 
-void make_number(base)
-unsigned base;
+void make_number(unsigned base)
 {
     SCRATCH char *p;
     SCRATCH unsigned d;
-    void exp_error();
 
     token.attr = VAL;
     token.valu = 0;
@@ -428,27 +423,23 @@ unsigned base;
     return;
 }
 
-int isalph(c)
-char c;
+int isalph(char c)
 {
     return (c >= '@' && c <= '~') || c == '!' || c == '#' || c == '$' ||
         c == '%' || c == '&' || c == '.' || c == ':' || c == '?';
 }
 
-int isnum(c)
-char c;
+int isnum(char c)
 {
     return c >= '0' && c <= '9';
 }
 
-int ishex(c)
-char c;
+int ishex(char c)
 {
     return isnum(c) || ((c = toupper(c)) >= 'A' && c <= 'F');
 }
 
-int myisalnum(c)
-char c;
+int myisalnum(char c)
 {
     return isalph(c) || isnum(c);
 }
@@ -456,7 +447,7 @@ char c;
 /*  Push back the current token into the input stream.  One level of    */
 /*  pushback is supported.                                              */
 
-void unlex()
+void unlex(void)
 {
     oldt = TRUE;
     return;
@@ -465,11 +456,8 @@ void unlex()
 /*  Get an alphanumeric string into the string value part of the        */
 /*  current token.  Leading blank space is trashed.                     */
 
-void pops(s)
-char *s;
+void pops(char *s)
 {
-    void pushc(), trash();
-
     trash();
     for (; myisalnum(*s = popc()); ++s);
     pushc(*s);
@@ -479,10 +467,9 @@ char *s;
 
 /*  Trash blank space and push back the character following it.         */
 
-void trash()
+void trash(void)
 {
     SCRATCH char c;
-    void pushc();
 
     while ((c = popc()) == ' ');
     pushc(c);
@@ -498,7 +485,7 @@ void trash()
 static int oldc, eol;
 static char *lptr;
 
-int popc()
+int popc(void)
 {
     SCRATCH int c;
 
@@ -532,8 +519,7 @@ int popc()
 /*  Push character back onto input stream.  Only one level of push-back */
 /*  supported.  \0 cannot be pushed back, but nobody would want to.     */
 
-void pushc(c)
-char c;
+void pushc(char c)
 {
     oldc = c;
     return;
@@ -542,10 +528,8 @@ char c;
 /*  Begin new line of source input.  This routine returns non-zero if   */
 /*  EOF has been reached on the main source file, zero otherwise.       */
 
-int newline()
+int newline(void)
 {
-    void fatal_error();
-
     oldc = '\0';
     lptr = line;
     oldt = eol = FALSE;

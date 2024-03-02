@@ -477,4 +477,35 @@ typedef struct {
 
 #define    HEXSIZE        32
 
-extern void error(char code);
+/* from a18eval.c */
+unsigned expr(void);
+int isalph(char c);
+TOKEN *lex(void);
+int newline(void);
+int popc(void);
+void pops(char *s);
+void pushc(char c);
+void trash(void);
+
+/* from a18util.c */
+void error(char code);
+void fatal_error(char *msg);
+OPCODE *find_code(char *nam);
+OPCODE *find_operator(char *nam);
+SYMBOL *find_symbol(char *nam, int label);
+void hclose(void);
+void hopen(char *nam);
+void hputc(unsigned c);
+void hseek(unsigned a);
+void lclose(void);
+void lopen(char *nam);
+void lputs(void);
+SYMBOL *new_symbol(char *nam);
+void rclose(void);
+void ropen(char *nam);
+void rputc(unsigned c);
+void rseek(unsigned a);
+void sclose(void);
+void sopen(char *nam);
+void unlex(void);
+void warning(char *msg);

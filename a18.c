@@ -70,6 +70,16 @@ parse the source line convert it into the object bytes that it represents.
 
 #include "a18.h"
 
+/*  Local prototypes:                                                   */
+
+void asm_line(void);
+void do_label(void);
+unsigned *do_string(char *s, unsigned *o);
+void flush(void);
+int isoct(char c);
+void normal_op(void);
+void pseudo_op(void);
+
 /*  Define global mailboxes for all modules:                            */
 
 char errcode, line[MAXLINE + 1], title[MAXLINE];
@@ -134,14 +144,6 @@ int main(int argc, char **argv)
     SCRATCH unsigned *o;
     SCRATCH int i;
     SCRATCH SYMBOL* l;
-    SYMBOL* new_symbol();
-    int newline();
-    void asm_line();
-    void lclose(), lopen(), lputs();
-    void hclose(), hopen(), hputc();
-    void rclose(), ropen(), rputc();
-    void sclose(), sopen();
-    void fatal_error(), warning();
 
     printf("1802/1805A Cross-Assembler (Portable) Ver 3.0\n");
     printf("Copyright (c) 1985 William C. Colley, III\n");
@@ -292,14 +294,10 @@ int ifstack[IFDEPTH] = { ON };
 
 OPCODE *opcod;
 
-void asm_line()
+void asm_line(void)
 {
     SCRATCH int i;
     SCRATCH size_t len;
-    int isalph(), popc();
-    OPCODE *find_code(), *find_operator();
-    void do_label(), flush(), normal_op(), pseudo_op();
-    void pops(), pushc(), trash();
 
     address = pc;
     bytes = 0;
@@ -373,17 +371,15 @@ void asm_line()
     return;
 }
 
-void flush()
+void flush(void)
 {
     while (popc() != '\n');
 }
 
-void do_label()
+void do_label(void)
 {
     SCRATCH SYMBOL *l;
     SCRATCH size_t len;
-    SYMBOL *find_symbol(), *new_symbol();
-//    void error();
 
     if (label[0]) {
         listhex = TRUE;
@@ -411,12 +407,9 @@ void do_label()
     }
 }
 
-void normal_op()
+void normal_op(void)
 {
     SCRATCH unsigned attrib, *objp, operand;
-    unsigned expr();
-    TOKEN *lex();
-    void do_label(), unlex();
 
     do_label();
     bytes = (attrib = opcod -> attr) & BYTES;
@@ -484,15 +477,12 @@ void normal_op()
     }
 }
 
-unsigned *do_string(s, o)
-char* s;
-unsigned *o;
+unsigned *do_string(char *s, unsigned *o)
 {
     SCRATCH int esc;
     SCRATCH char t;
     SCRATCH char *n, *e;
     SCRATCH unsigned i;
-    int isoct(char c);
 
     esc = FALSE;
     while (*s) {
@@ -554,16 +544,12 @@ unsigned *o;
     return o;
 }
 
-void pseudo_op()
+void pseudo_op(void)
 {
     SCRATCH unsigned *o, u, v;
     SCRATCH SYMBOL *l;
     SCRATCH unsigned i;
     SCRATCH FILE* f;
-    unsigned expr();
-    SYMBOL *find_symbol(), *new_symbol();
-    TOKEN *lex();
-    void do_label(), fatal_error(), hseek(), rseek(), unlex();
 
     o = obj;
     switch (opcod -> valu) {

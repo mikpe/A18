@@ -75,6 +75,16 @@ This module contains the following utility packages:
 
 #include "a18.h"
 
+/*  Local prototypes:                                                   */
+
+void check_page(void);
+void list_sym(SYMBOL *sp);
+OPCODE *mybsearch(OPCODE *lo, OPCODE *hi, char *nam);
+void putb(unsigned b);
+void record(unsigned typ);
+int ustrcmp(char *s, char *t);
+void write_shared(SYMBOL *sp);
+
 /*  Make sure that MSDOS compilers using the large memory model know    */
 /*  that calloc() returns pointer to char as an MSDOS far pointer is    */
 /*  NOT compatible with the int type as is usually the case.            */
@@ -101,13 +111,11 @@ char composite[64];
 /*  the symbol already exists.  If there's not enough memory to store   */
 /*  the new symbol, a fatal error occurs.                               */
 
-SYMBOL *new_symbol(nam)
-char *nam;
+SYMBOL *new_symbol(char *nam)
 {
     SCRATCH int i;
     SCRATCH char* n;
     SCRATCH SYMBOL **p, *q;
-    void fatal_error();
 
     if ((*nam == '.') && (global != NULL)) {
         n = composite;
@@ -139,9 +147,7 @@ char *nam;
 /*  Look up symbol in symbol table.  Returns pointer to symbol or NULL  */
 /*  if symbol not found.                                                */
 
-SYMBOL* find_symbol(nam, label)
-char* nam;
-int label;
+SYMBOL *find_symbol(char *nam, int label)
 {
     SCRATCH int i;
     SCRATCH char* n;
@@ -170,11 +176,8 @@ int label;
 /*  table for a given opcode and returns either a pointer to it or      */
 /*  NULL if the opcode doesn't exist.                                   */
 
-OPCODE *find_code(nam)
-char *nam;
+OPCODE *find_code(char *nam)
 {
-    OPCODE *mybsearch();
-
     static OPCODE opctbl[] = {
     { 1,                        0x74,       "ADC"    },
     { IMMED + 2,                0x7c,       "ADCI"   },
@@ -359,11 +362,8 @@ char *nam;
 /*  operator table for a given operator and returns either a pointer    */
 /*  to it or NULL if the opcode doesn't exist.                          */
 
-OPCODE *find_operator(nam)
-char *nam;
+OPCODE *find_operator(char *nam)
 {
-    OPCODE *mybsearch();
-
     static OPCODE oprtbl[] = {
     { UNARY  + UOP1  + OPR,     '$',    "$"     },
     { BINARY + LOG1  + OPR,     AND,    "AND"   },
@@ -386,8 +386,7 @@ char *nam;
     return mybsearch(oprtbl,oprtbl + (sizeof(oprtbl) / sizeof(OPCODE)),nam);
 }
 
-int ustrcmp(s, t)
-char* s, * t;
+int ustrcmp(char *s, char *t)
 {
     SCRATCH int i;
 
@@ -395,9 +394,7 @@ char* s, * t;
     return i;
 }
 
-OPCODE *mybsearch(lo,hi,nam)
-OPCODE *lo, *hi;
-char *nam;
+OPCODE *mybsearch(OPCODE *lo, OPCODE *hi, char *nam)
 {
     SCRATCH int i;
     SCRATCH OPCODE *chk;
@@ -426,12 +423,8 @@ FILE *list = NULL;
 /*  fatal error occurs.  If no listing file is open, all calls to       */
 /*  lputs() and lclose() have no effect.                                */
 
-void lopen(nam)
-char *nam;
+void lopen(char *nam)
 {
-    FILE *fopen();
-    void fatal_error(), warning();
-
     if (list)
         warning(TWOLST);
     else if (!(list = fopen(nam,"w")))
@@ -448,11 +441,10 @@ extern int binary;
 extern int octal;
 extern int byteline;
 
-void lputs()
+void lputs(void)
 {
     SCRATCH int i, j, k;
     SCRATCH unsigned *o;
-    void check_page(), fatal_error();
     unsigned char bb=0;
     int didline;
 
@@ -533,10 +525,8 @@ void lputs()
 
 static int col = 0;
 
-void lclose()
+void lclose(void)
 {
-    void fatal_error(), list_sym();
-
     if (list) {
         if (sroot) {
             list_sym(sroot);
@@ -550,11 +540,8 @@ void lclose()
     return;
 }
 
-void list_sym(sp)
-SYMBOL *sp;
+void list_sym(SYMBOL *sp)
 {
-    void check_page();
-
     if (sp) {
         list_sym(sp -> left);
         fprintf(list,"%04x  %-10s",sp -> valu,sp -> sname);
@@ -571,7 +558,7 @@ SYMBOL *sp;
     return;
 }
 
-void check_page()
+void check_page(void)
 {
     if (pagelen && !--listleft)
         eject = TRUE;
@@ -594,12 +581,8 @@ static unsigned rgap = 0;
 static unsigned char rbuf[HEXSIZE];
 
 /* Raw file output routines*/
-void ropen(nam)
-char *nam;
+void ropen(char *nam)
 {
-    FILE *fopen();
-    void fatal_error(), warning();
-
     if (raw)
         warning(TWOHEX);
     else if (!(raw = fopen(nam,"wb")))
@@ -607,8 +590,7 @@ char *nam;
     return;
 }
 
-void rputc(c)
-unsigned c;
+void rputc(unsigned c)
 {
     if (raw) {
         if (rgap) {
@@ -639,11 +621,8 @@ unsigned c;
     }
 }
 
-void rseek(a)
-unsigned a;
+void rseek(unsigned a)
 {
-    void fatal_error();
-
     if (a < raddr) {
         fatal_error("Binary can't go backward.");
     }
@@ -655,10 +634,8 @@ unsigned a;
     raddr = a;
 }
 
-void rclose()
+void rclose(void)
 {
-    void fatal_error();
-
     if (raw) {
         if (rcnt)
             fwrite(rbuf, 1, rcnt, raw);
@@ -679,12 +656,8 @@ FILE* shared = NULL;
 /*  correctly, a fatal error occurs.  If no listing file is open, all   */
 /*  calls to sclose() have no effect.                                   */
 
-void sopen(nam)
-char* nam;
+void sopen(char *nam)
 {
-    FILE* fopen();
-    void fatal_error(), warning();
-
     if (shared)
         warning(TWOSHR);
     else if (!(shared = fopen(nam, "w")))
@@ -697,10 +670,8 @@ char* nam;
 /*  and the shared symbol file is closed.  If the disk fills up, a fatal*/
 /*  error occurs.                                                       */
 
-void sclose()
+void sclose(void)
 {
-    void fatal_error(), write_shared();
-
     if (shared) {
         if (sroot) {
             write_shared(sroot);
@@ -711,8 +682,7 @@ void sclose()
     return;
 }
 
-void write_shared(sp)
-SYMBOL* sp;
+void write_shared(SYMBOL *sp)
 {
     if (sp) {
         write_shared(sp->left);
@@ -741,12 +711,8 @@ static unsigned buf[HEXSIZE];
 /*  occurs.  If no hex file is open, all calls to hputc(), hseek(), and */
 /*  hclose() have no effect.                                            */
 
-void hopen(nam)
-char *nam;
+void hopen(char *nam)
 {
-    FILE *fopen();
-    void fatal_error(), warning();
-
     if (hex)
         warning(TWOHEX);
     else if (!(hex = fopen(nam,"w")))
@@ -758,11 +724,8 @@ char *nam;
 /*  record.  If the record fills up, it gets written to disk.  If the   */
 /*  disk fills up, a fatal error occurs.                                */
 
-void hputc(c)
-unsigned c;
+void hputc(unsigned c)
 {
-    void record();
-
     if (hex) {
         buf[cnt++] = c;
         if (cnt == HEXSIZE)
@@ -776,11 +739,8 @@ unsigned c;
 /*  it gets written to disk.  If the disk fills up, a fatal error       */
 /*  occurs.                                                             */
 
-void hseek(a)
-unsigned a;
+void hseek(unsigned a)
 {
-    void record();
-
     if (hex) {
         if (cnt)
             record(0);
@@ -793,10 +753,8 @@ unsigned a;
 /*  EOF record is added, and file is closed.  If the disk fills up, a   */
 /*  fatal error occurs.                                                 */
 
-void hclose()
+void hclose(void)
 {
-    void fatal_error(), record();
-
     if (hex) {
         if (cnt)
             record(0);
@@ -807,11 +765,9 @@ void hclose()
     return;
 }
 
-void record(typ)
-unsigned typ;
+void record(unsigned typ)
 {
     SCRATCH unsigned i;
-    void fatal_error(), putb();
 
     putc(':',hex);
     putb(cnt);
@@ -837,8 +793,7 @@ unsigned typ;
     return;
 }
 
-void putb(b)
-unsigned b;
+void putb(unsigned b)
 {
     static char digit[] = "0123456789ABCDEF";
 
@@ -852,8 +807,7 @@ unsigned b;
 /*  the error code is filled in and the    number of lines with errors  */
 /*  is adjusted.                                                        */
 
-void error(code)
-char code;
+void error(char code)
 {
     if (errcode == ' ') {
         errcode = code;
@@ -864,8 +818,7 @@ char code;
 /*  Fatal error handler routine.  A message gets printed on the stderr  */
 /*  device, and the program bombs.                                      */
 
-void fatal_error(msg)
-char *msg;
+void fatal_error(char *msg)
 {
     printf("Fatal Error -- %s\n",msg);
     exit(-1);
@@ -874,8 +827,7 @@ char *msg;
 /*  Non-fatal error handler routine.  A message gets printed on the     */
 /*  stderr device, and the routine returns.                             */
 
-void warning(msg)
-char *msg;
+void warning(char *msg)
 {
     printf("Warning -- %s\n",msg);
     return;
