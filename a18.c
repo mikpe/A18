@@ -72,13 +72,13 @@ parse the source line convert it into the object bytes that it represents.
 
 /*  Local prototypes:                                                   */
 
-void asm_line(void);
-void do_label(void);
-unsigned *do_string(char *s, unsigned *o);
-void flush(void);
-int isoct(char c);
-void normal_op(void);
-void pseudo_op(void);
+static void asm_line(void);
+static void do_label(void);
+static unsigned *do_string(char *s, unsigned *o);
+static void flush(void);
+static int isoct(char c);
+static void normal_op(void);
+static void pseudo_op(void);
 
 /*  Define global mailboxes for all modules:                            */
 
@@ -294,7 +294,7 @@ int ifstack[IFDEPTH] = { ON };
 
 OPCODE *opcod;
 
-void asm_line(void)
+static void asm_line(void)
 {
     SCRATCH int i;
     SCRATCH size_t len;
@@ -371,12 +371,12 @@ void asm_line(void)
     return;
 }
 
-void flush(void)
+static void flush(void)
 {
     while (popc() != '\n');
 }
 
-void do_label(void)
+static void do_label(void)
 {
     SCRATCH SYMBOL *l;
     SCRATCH size_t len;
@@ -407,7 +407,7 @@ void do_label(void)
     }
 }
 
-void normal_op(void)
+static void normal_op(void)
 {
     SCRATCH unsigned attrib, *objp, operand;
 
@@ -477,7 +477,7 @@ void normal_op(void)
     }
 }
 
-unsigned *do_string(char *s, unsigned *o)
+static unsigned *do_string(char *s, unsigned *o)
 {
     SCRATCH int esc;
     SCRATCH char t;
@@ -544,7 +544,7 @@ unsigned *do_string(char *s, unsigned *o)
     return o;
 }
 
-void pseudo_op(void)
+static void pseudo_op(void)
 {
     SCRATCH unsigned *o, u, v;
     SCRATCH SYMBOL *l;
@@ -1490,7 +1490,7 @@ void pseudo_op(void)
     return;
 }
 
-int isoct(char c)
+static int isoct(char c)
 {
     return c >= '0' && c <= '7';
 }

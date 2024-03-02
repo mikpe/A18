@@ -77,13 +77,13 @@ This module contains the following utility packages:
 
 /*  Local prototypes:                                                   */
 
-void check_page(void);
-void list_sym(SYMBOL *sp);
-OPCODE *mybsearch(OPCODE *lo, OPCODE *hi, char *nam);
-void putb(unsigned b);
-void record(unsigned typ);
-int ustrcmp(char *s, char *t);
-void write_shared(SYMBOL *sp);
+static void check_page(void);
+static void list_sym(SYMBOL *sp);
+static OPCODE *mybsearch(OPCODE *lo, OPCODE *hi, char *nam);
+static void putb(unsigned b);
+static void record(unsigned typ);
+static int ustrcmp(char *s, char *t);
+static void write_shared(SYMBOL *sp);
 
 /*  Make sure that MSDOS compilers using the large memory model know    */
 /*  that calloc() returns pointer to char as an MSDOS far pointer is    */
@@ -386,7 +386,7 @@ OPCODE *find_operator(char *nam)
     return mybsearch(oprtbl,oprtbl + (sizeof(oprtbl) / sizeof(OPCODE)),nam);
 }
 
-int ustrcmp(char *s, char *t)
+static int ustrcmp(char *s, char *t)
 {
     SCRATCH int i;
 
@@ -394,7 +394,7 @@ int ustrcmp(char *s, char *t)
     return i;
 }
 
-OPCODE *mybsearch(OPCODE *lo, OPCODE *hi, char *nam)
+static OPCODE *mybsearch(OPCODE *lo, OPCODE *hi, char *nam)
 {
     SCRATCH int i;
     SCRATCH OPCODE *chk;
@@ -540,7 +540,7 @@ void lclose(void)
     return;
 }
 
-void list_sym(SYMBOL *sp)
+static void list_sym(SYMBOL *sp)
 {
     if (sp) {
         list_sym(sp -> left);
@@ -558,7 +558,7 @@ void list_sym(SYMBOL *sp)
     return;
 }
 
-void check_page(void)
+static void check_page(void)
 {
     if (pagelen && !--listleft)
         eject = TRUE;
@@ -682,7 +682,7 @@ void sclose(void)
     return;
 }
 
-void write_shared(SYMBOL *sp)
+static void write_shared(SYMBOL *sp)
 {
     if (sp) {
         write_shared(sp->left);
@@ -765,7 +765,7 @@ void hclose(void)
     return;
 }
 
-void record(unsigned typ)
+static void record(unsigned typ)
 {
     SCRATCH unsigned i;
 
@@ -793,7 +793,7 @@ void record(unsigned typ)
     return;
 }
 
-void putb(unsigned b)
+static void putb(unsigned b)
 {
     static char digit[] = "0123456789ABCDEF";
 

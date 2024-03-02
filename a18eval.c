@@ -71,13 +71,12 @@ arithmetic expressions.
 
 /*  Local prototypes:                                                   */
 
-void exp_error(char c);
-unsigned eval(unsigned pre);
-int ishex(char c);
-int isnum(char c);
-void make_number(unsigned base);
-int myisalnum(char c);
-void unlex(void);
+static void exp_error(char c);
+static unsigned eval(unsigned pre);
+static int ishex(char c);
+static int isnum(char c);
+static void make_number(unsigned base);
+static int myisalnum(char c);
 
 /*  Get access to global mailboxes defined in A68.C:                    */
 
@@ -104,7 +103,7 @@ unsigned expr(void)
     return bad ? 0 : u;
 }
 
-unsigned eval(unsigned pre)
+static unsigned eval(unsigned pre)
 {
     register unsigned op, u, v;
 
@@ -235,7 +234,7 @@ unsigned eval(unsigned pre)
     }
 }
 
-void exp_error(char c)
+static void exp_error(char c)
 {
     forwd = bad = TRUE;
     error(c);
@@ -404,7 +403,7 @@ TOKEN *lex(void)
     return &token;
 }
 
-void make_number(unsigned base)
+static void make_number(unsigned base)
 {
     SCRATCH char *p;
     SCRATCH unsigned d;
@@ -429,17 +428,17 @@ int isalph(char c)
         c == '%' || c == '&' || c == '.' || c == ':' || c == '?';
 }
 
-int isnum(char c)
+static int isnum(char c)
 {
     return c >= '0' && c <= '9';
 }
 
-int ishex(char c)
+static int ishex(char c)
 {
     return isnum(c) || ((c = toupper(c)) >= 'A' && c <= 'F');
 }
 
-int myisalnum(char c)
+static int myisalnum(char c)
 {
     return isalph(c) || isnum(c);
 }
