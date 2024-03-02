@@ -433,13 +433,13 @@ static void normal_op(void)
                     error('R');
                     return;
                 }
-
+                /*FALLTHROUGH*/
             case NOT_R0:
                 if (!operand) {
                     error('R');
                     return;
                 }
-
+                /*FALLTHROUGH*/
             case ANY:
                 if (operand > 15) {
                     error('R');

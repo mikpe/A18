@@ -113,7 +113,7 @@ static unsigned eval(unsigned pre)
             case SEP:
                 if (pre != START)
                 unlex();
-
+                /*FALLTHROUGH*/
             case EOL:
                 exp_error('E');
                 printf(" EXPRESSION ERROR 1\n");
@@ -144,7 +144,7 @@ static unsigned eval(unsigned pre)
                         u = low(u);
                         break;
                 }
-
+                /*FALLTHROUGH*/
             case VAL:
             case STR:
                 for (;;) {
@@ -153,6 +153,7 @@ static unsigned eval(unsigned pre)
                         case SEP:
                             if (pre != START)
                                 unlex();
+                            /*FALLTHROUGH*/
                         case EOL:
                             if (pre == LPREN)
                                 exp_error('(');
@@ -304,6 +305,7 @@ TOKEN *lex(void)
             case 'Q':   b = 8; break;
 
             default:    ++p;
+                        /*FALLTHROUGH*/
             case 'D':   b = 10; break;
 
             case 'H':   b = 16; break;
